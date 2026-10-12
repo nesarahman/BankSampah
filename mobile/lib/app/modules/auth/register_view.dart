@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'auth_store.dart';
 // HAPUS baris: import 'login_view.dart';  ← karena tidak dipakai
 
 class RegisterView extends StatefulWidget {
@@ -11,6 +11,7 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _noHpController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _konfirmasiPasswordController =
@@ -33,6 +34,18 @@ class _RegisterViewState extends State<RegisterView> {
       ).showSnackBar(const SnackBar(content: Text('Kata sandi tidak cocok!')));
       return;
     }
+    final berhasil = AuthStore.register(
+      nama: _namaController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      );
+      if (!berhasil) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email sudah terdaftar! Silakan login.'),
+            ),);
+            return;
+            }
 
     setState(() {
       _isLoading = true;
@@ -98,6 +111,19 @@ class _RegisterViewState extends State<RegisterView> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _noHpController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Nomor HP / WhatsApp',
+                  hintText: 'Contoh: 081234567890',
+                  prefixIcon: const Icon(Icons.phone),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 16),
               TextField(
                 controller: _emailController,

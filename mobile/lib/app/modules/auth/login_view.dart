@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'register_view.dart';
+import 'auth_store.dart';
 import '../../../main_navigation_view.dart';
 
 class LoginView extends StatefulWidget {
@@ -13,6 +14,8 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  String selectedRole = 'Nasabah';
 
   int _failedAttempts = 0;
   bool _isLocked = false;
@@ -95,14 +98,10 @@ class _LoginViewState extends State<LoginView> {
       });
 
       // Simulasi: password benar = "regreen123"
-      if (_passwordController.text == 'regreen123') {
-        _resetLockTimer();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login berhasil! Selamat datang di REGREEN'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      if (AuthStore.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+        )) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainNavigationView()),
