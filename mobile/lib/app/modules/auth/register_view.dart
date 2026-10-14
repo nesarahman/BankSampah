@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+
 import 'auth_store.dart';
-// HAPUS baris: import 'login_view.dart';  ← karena tidak dipakai
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -20,11 +20,12 @@ class _RegisterViewState extends State<RegisterView> {
 
   void _handleRegister() {
     if (_namaController.text.isEmpty ||
+        _noHpController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Semua field harus diisi!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semua field wajib harus diisi!')),
+      );
       return;
     }
 
@@ -34,18 +35,24 @@ class _RegisterViewState extends State<RegisterView> {
       ).showSnackBar(const SnackBar(content: Text('Kata sandi tidak cocok!')));
       return;
     }
+
     final berhasil = AuthStore.register(
       nama: _namaController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      noHp: _noHpController.text.trim(),
+      role: 'Nasabah',
+    );
+
+    if (!berhasil) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email sudah terdaftar! Silakan login.'),
+          backgroundColor: Colors.red,
+        ),
       );
-      if (!berhasil) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email sudah terdaftar! Silakan login.'),
-            ),);
-            return;
-            }
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -103,11 +110,11 @@ class _RegisterViewState extends State<RegisterView> {
               const SizedBox(height: 32),
               TextField(
                 controller: _namaController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Nama Lengkap',
-                  prefixIcon: const Icon(Icons.person),
+                  prefixIcon: Icon(Icons.person),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
               ),
@@ -115,24 +122,24 @@ class _RegisterViewState extends State<RegisterView> {
               TextField(
                 controller: _noHpController,
                 keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Nomor HP / WhatsApp',
                   hintText: 'Contoh: 081234567890',
-                  prefixIcon: const Icon(Icons.phone),
+                  prefixIcon: Icon(Icons.phone),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    ),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email),
+                  prefixIcon: Icon(Icons.email),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
               ),
@@ -140,11 +147,11 @@ class _RegisterViewState extends State<RegisterView> {
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Kata Sandi',
-                  prefixIcon: const Icon(Icons.lock),
+                  prefixIcon: Icon(Icons.lock),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
               ),
@@ -152,11 +159,11 @@ class _RegisterViewState extends State<RegisterView> {
               TextField(
                 controller: _konfirmasiPasswordController,
                 obscureText: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Konfirmasi Kata Sandi',
-                  prefixIcon: const Icon(Icons.lock_outline),
+                  prefixIcon: Icon(Icons.lock_outline),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
               ),
@@ -215,6 +222,7 @@ class _RegisterViewState extends State<RegisterView> {
   @override
   void dispose() {
     _namaController.dispose();
+    _noHpController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _konfirmasiPasswordController.dispose();

@@ -2,16 +2,16 @@
 
 Dokumen ini memastikan pembagian tugas yang adil, terukur, dan mudah dilacak di GitHub. Setiap anggota memiliki "wilayah kekuasaan" masing-masing dengan beban kerja yang seimbang antara UI dan logika, sesuai dengan proposal project Pemrograman Mobile.
 
-**Status saat ini:** Struktur folder utama (`mobile/`, `backend/`, `database/`, `design/`, `documentation/`) sudah dibuat dan di-push ke repository. Library `GetX` telah dihapus dan diganti dengan **State Management bawaan Flutter (`StatefulWidget` & `Navigator`)** sesuai arahan dosen. Tahap selanjutnya adalah mengisi tiap file sesuai PIC (Person In Charge) dan branch yang tertera di bawah.
+**Status saat ini:** Struktur folder utama (`mobile/`, `backend/`, `database/`, `documentation/`) sudah dibuat dan di-push ke repository. Library `GetX` telah dihapus dan diganti dengan **State Management bawaan Flutter (`StatefulWidget` & `Navigator`)** sesuai arahan dosen. Tahap selanjutnya adalah mengisi tiap file sesuai PIC (Person In Charge) dan branch yang tertera di bawah.
 
 ---
 
 ## 📑 Daftar Isi
-1. [ Ringkasan Tim](#-ringkasan-tim)
+1. [👥 Ringkasan Tim](#-ringkasan-tim)
 2. [📁 Struktur Folder](#-struktur-folder)
-3. [️ Kepemilikan Folder](#️-kepemilikan-folder)
+3. [🗂️ Kepemilikan Folder](#️-kepemilikan-folder)
 4. [📊 Detail Tanggung Jawab per Anggota](#-detail-tanggung-jawab-per-anggota)
-5. [ Branch yang Harus Dibuat per Anggota](#-branch-yang-harus-dibuat-per-anggota)
+5. [🌿 Branch yang Harus Dibuat per Anggota](#-branch-yang-harus-dibuat-per-anggota)
 6. [📖 Panduan Git & Membuat Branch](#-panduan-git--membuat-branch)
 7. [⚠️ Catatan Penting](#️-catatan-penting)
 
@@ -24,7 +24,7 @@ Dokumen ini memastikan pembagian tugas yang adil, terukur, dan mudah dilacak di 
 | 2 | Fatika | 07352411150 | UI/UX Designer & Frontend | Design system, implementasi halaman Login, Register, dan Profil + integrasi API. |
 | 3 | Hadjija | 07352411056 | Mobile Developer | Implementasi halaman Beranda (Dashboard Saldo) dan Jemput Sampah (Formulir) + integrasi API. |
 | 4 | Radit | 07352311071 | Mobile Developer | Implementasi halaman Katalog Sampah dan Riwayat Transaksi, state management saldo + integrasi API. |
-| 5 | Vergiawan | 07352311081 | Backend & Database Dev | Laravel REST API, MySQL Database, Postman Testing (Prioritas MVP Nasabah). |
+| 5 | Vergiawan | 07352311081 | Backend & Database Dev | Laravel REST API, MySQL Database, Testing API (Prioritas MVP Nasabah). |
 | 6 | Muhajjir | 07352411107 | QA & DevOps | Implementasi halaman Drop Point (Peta), Testing, Build APK, Dokumentasi Teknis + integrasi API. |
 
 ---
@@ -36,6 +36,7 @@ Kode PIC pada tree: **NES** = Nesa, **FAT** = Fatika, **HAD** = Hadjija, **RAD**
 REGREEN/
 ├── mobile/                          # Project Flutter Utama
 │   ├── pubspec.yaml                 # Dependencies (Tanpa GetX, pakai bawaan Flutter)
+│   ├── design/                      # Aset UI/UX & Gambar (Figma/AI Studio) [FAT & NES]
 │   └── lib/
 │       ├── main.dart                # Entry point (MaterialApp) [NES]
 │       ├── main_navigation_view.dart# Bottom Navigation (Wadah utama) [NES]
@@ -65,8 +66,7 @@ REGREEN/
 │   └── database/migrations/         # Struktur Tabel MySQL
 │
 ├── database/                        # File dump.sql & ERD [VER]
-├── design/                          # Aset UI/UX (Figma/AI Studio) [FAT & NES]
-├── documentation/                   # Proposal, User Manual, Laporan [NES & MUH]
+├── documentation/                   # Proposal, User Manual, Laporan, API Docs [NES & MUH]
 └── README.md                        # Dokumen ini [NES]
 ```
 
