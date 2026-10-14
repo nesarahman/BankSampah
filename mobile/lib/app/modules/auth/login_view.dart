@@ -15,13 +15,12 @@ class _LoginViewState extends State<LoginView> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  String selectedRole = 'Nasabah';
-
   int _failedAttempts = 0;
   bool _isLocked = false;
   int _lockTimer = 0;
   bool _isLoading = false;
   bool _rememberMe = false;
+
   String _selectedRole = 'Nasabah';
 
   final List<Map<String, dynamic>> _roles = [
@@ -40,14 +39,11 @@ class _LoginViewState extends State<LoginView> {
     },
   ];
 
-  // ✅ PERBAIKAN ERROR 1: Timer yang benar
   void _startLockTimer() {
     setState(() {
       _isLocked = true;
       _lockTimer = 300; // 5 menit
     });
-
-    // Gunakan loop while dengan await (bukan Future.doWhile)
     _runCountdown();
   }
 
@@ -64,14 +60,6 @@ class _LoginViewState extends State<LoginView> {
         });
       }
     }
-  }
-
-  void _resetLockTimer() {
-    setState(() {
-      _isLocked = false;
-      _lockTimer = 0;
-      _failedAttempts = 0;
-    });
   }
 
   String _formatTime(int seconds) {
@@ -97,11 +85,12 @@ class _LoginViewState extends State<LoginView> {
         _isLoading = false;
       });
 
-      // Simulasi: password benar = "regreen123"
-      if (AuthStore.login(
+      final user = AuthStore.login(
         email: _emailController.text,
         password: _passwordController.text,
-        )) {
+      );
+
+      if (user != null) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainNavigationView()),
@@ -171,31 +160,166 @@ class _LoginViewState extends State<LoginView> {
             const SizedBox(height: 16),
             const Text('Silakan pilih salah satu:'),
             const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Fitur Lupa Kata Sandi - Tugas Fatika'),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showForgotPasswordDialog();
+                },
+                icon: const Icon(Icons.email_outlined, color: Colors.green),
+                label: const Text(
+                  'Reset via Email',
+                  style: TextStyle(color: Colors.green),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: Colors.green),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                );
-              },
-              icon: const Icon(Icons.email, color: Colors.green),
-              label: const Text(
-                'Lupa Kata Sandi (Email/OTP)',
-                style: TextStyle(color: Colors.green),
+                ),
               ),
             ),
-            TextButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.timer, color: Colors.grey),
-              label: Text(
-                'Tunggu ${_formatTime(_lockTimer)} untuk coba lagi',
-                style: const TextStyle(color: Colors.grey),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.timer_outlined, color: Colors.grey),
+                label: Text(
+                  'Tunggu ${_formatTime(_lockTimer)} untuk coba lagi',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog() {
+    final TextEditingController resetEmailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.password, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Lupa Kata Sandi'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Masukkan email terdaftar Anda. Kami akan mengirimkan kode OTP untuk mereset kata sandi.',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: resetEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Email Terdaftar',
+                hintText: 'nama@email.com',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (resetEmailController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Email tidak boleh kosong!')),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Kode OTP simulasi telah dikirim ke email Anda!',
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Kirim OTP'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGoogleLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Login Google'),
+          ],
+        ),
+        content: const Text(
+          'Fitur login dengan Google memerlukan integrasi Firebase Authentication. Ini adalah versi simulasi untuk tahap pengembangan.',
+          style: TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MainNavigationView(),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Simulasi Login'),
+          ),
+        ],
       ),
     );
   }
@@ -288,7 +412,6 @@ class _LoginViewState extends State<LoginView> {
                                 ? Colors.green
                                 : Colors.grey.shade300,
                           ),
-                          // ✅ PERBAIKAN ERROR 2: Ganti withOpacity dengan withValues
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
@@ -432,21 +555,17 @@ class _LoginViewState extends State<LoginView> {
                     'Kata Sandi',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  TextButton(
-                    onPressed: _isLocked
-                        ? null
-                        : () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Fitur Lupa Kata Sandi - Tugas Fatika',
-                                ),
-                              ),
-                            );
-                          },
+                  InkWell(
+                    onTap: _isLocked ? null : _showForgotPasswordDialog,
                     child: const Text(
                       'Lupa Kata Sandi?',
-                      style: TextStyle(color: Colors.green, fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Colors.green,
+                      ),
                     ),
                   ),
                 ],
@@ -536,30 +655,31 @@ class _LoginViewState extends State<LoginView> {
                 ],
               ),
               const SizedBox(height: 16),
-              // ✅ PERBAIKAN: Hapus tombol Sidik Jari, hanya Google
               Center(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Login Google - Tugas Fatika'),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.g_mobiledata, color: Colors.green),
+                  onPressed: _showGoogleLoginDialog,
+                  icon: const Icon(
+                    Icons.g_mobiledata,
+                    color: Colors.red,
+                    size: 24,
+                  ),
                   label: const Text(
                     'Masuk dengan Google',
-                    style: TextStyle(color: Colors.green),
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
+                      horizontal: 24,
                       vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    side: const BorderSide(color: Colors.green),
+                    side: BorderSide(color: Colors.grey.shade300),
+                    backgroundColor: Colors.white,
                   ),
                 ),
               ),
