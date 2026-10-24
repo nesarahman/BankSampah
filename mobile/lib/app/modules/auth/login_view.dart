@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'register_view.dart';
-import 'auth_store.dart';
 import '../../../main_navigation_view.dart';
+import '../../../api_service.dart'; // ✅ Naik 3 level
+import '../../../app_data.dart'; // ✅ Naik 3 level
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -68,7 +69,8 @@ class _LoginViewState extends State<LoginView> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  void _handleLogin() {
+  // ✅ FUNGSI INI DIUBAH TOTAL MENGGUNAKAN API
+  Future<void> _handleLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       _showErrorDialog('Email dan Kata Sandi harus diisi!');
       return;
@@ -78,37 +80,43 @@ class _LoginViewState extends State<LoginView> {
       _isLoading = true;
     });
 
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
+    // 1. Panggil API Login yang sebenarnya
+    final result = await ApiService.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
 
-      setState(() {
-        _isLoading = false;
-      });
+    if (!mounted) return;
 
-      final user = AuthStore.login(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-
-      if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainNavigationView()),
-        );
-      } else {
-        _failedAttempts++;
-
-        if (_failedAttempts >= 3) {
-          _startLockTimer();
-          _showLockDialog();
-        } else {
-          int sisa = 3 - _failedAttempts;
-          _showErrorDialog(
-            'Email atau Kata Sandi salah!\nSisa percobaan: $sisa',
-          );
-        }
-      }
+    setState(() {
+      _isLoading = false;
     });
+
+    // 2. Cek hasil dari API
+    if (result['success'] == true) {
+      // Login berhasil!
+      // Token dan Nama User OTOMATIS sudah disimpan di AppData oleh ApiService
+      _failedAttempts = 0; // Reset percobaan gagal
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainNavigationView()),
+      );
+    } else {
+      // Login gagal (password salah / akun tidak ditemukan)
+      _failedAttempts++;
+
+      if (_failedAttempts >= 3) {
+        _startLockTimer();
+        _showLockDialog();
+      } else {
+        int sisa = 3 - _failedAttempts;
+        _showErrorDialog(
+          result['message'] ??
+              'Email atau Kata Sandi salah!\nSisa percobaan: $sisa',
+        );
+      }
+    }
   }
 
   void _showErrorDialog(String message) {

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'education_detail_view.dart';
+import 'withdraw_view.dart';
+
 const _bg = Color(0xFFF7F8FF);
 const _dark = Color(0xFF1B5E20);
 const _green = Color(0xFF2E7D32);
@@ -23,12 +26,12 @@ String _ribuan(int v) {
 }
 
 BoxDecoration _kartu() => BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: const [
-        BoxShadow(color: Color(0x0F1A1C24), blurRadius: 12, offset: Offset(0, 4)),
-      ],
-    );
+  color: Colors.white,
+  borderRadius: BorderRadius.circular(20),
+  boxShadow: const [
+    BoxShadow(color: Color(0x0F1A1C24), blurRadius: 12, offset: Offset(0, 4)),
+  ],
+);
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key, this.onTabSelected});
@@ -36,7 +39,13 @@ class HomeView extends StatelessWidget {
   /// Index tab: 0 Beranda, 1 Jemput, 2 Katalog, 3 Riwayat, 4 Drop Point.
   final ValueChanged<int>? onTabSelected;
 
-  static const _namaTab = ['Beranda', 'Jemput', 'Katalog', 'Riwayat', 'Drop Point'];
+  static const _namaTab = [
+    'Beranda',
+    'Jemput',
+    'Katalog',
+    'Riwayat',
+    'Drop Point',
+  ];
 
   void _pindah(BuildContext context, int tab) {
     if (tab == 0) return;
@@ -61,38 +70,74 @@ class HomeView extends StatelessWidget {
             const SizedBox(height: 14),
             const _Sapaan(),
             const SizedBox(height: 14),
+
+            // ✅ PERBAIKAN 1: Tombol Tarik Saldo sekarang menuju WithdrawView
             _SaldoCard(
-              onTarik: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Halaman Tarik Saldo belum dibuat')),
-              ),
+              onTarik: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WithdrawView()),
+                );
+              },
               onSetor: () => _pindah(context, 1),
             ),
+
             const SizedBox(height: 24),
             const Row(
               children: [
-                Text('Layanan Cepat',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w600, color: _ink)),
+                Text(
+                  'Layanan Cepat',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: _ink,
+                  ),
+                ),
                 Spacer(),
-                Text('Ternate Aktif',
-                    style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w700, color: _green)),
+                Text(
+                  'Ternate Aktif',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _green,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                _Layanan(Icons.local_shipping_outlined, 'Jemput\nSampah',
-                    _mintSoft, _green, () => _pindah(context, 1)),
+                _Layanan(
+                  Icons.local_shipping_outlined,
+                  'Jemput\nSampah',
+                  _mintSoft,
+                  _green,
+                  () => _pindah(context, 1),
+                ),
                 const SizedBox(width: 10),
-                _Layanan(Icons.recycling, 'Jenis\nSampah', _blueSoft, _blueIcon,
-                    () => _pindah(context, 2)),
+                _Layanan(
+                  Icons.recycling,
+                  'Jenis\nSampah',
+                  _blueSoft,
+                  _blueIcon,
+                  () => _pindah(context, 2),
+                ),
                 const SizedBox(width: 10),
-                _Layanan(Icons.access_time, 'Riwayat\nCatatan', _blueSoft,
-                    _blueIcon, () => _pindah(context, 3)),
+                _Layanan(
+                  Icons.access_time,
+                  'Riwayat\nCatatan',
+                  _blueSoft,
+                  _blueIcon,
+                  () => _pindah(context, 3),
+                ),
                 const SizedBox(width: 10),
-                _Layanan(Icons.location_on_outlined, 'Drop Point', _mintSoft,
-                    _green, () => _pindah(context, 4)),
+                _Layanan(
+                  Icons.location_on_outlined,
+                  'Drop Point',
+                  _mintSoft,
+                  _green,
+                  () => _pindah(context, 4),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -102,17 +147,25 @@ class HomeView extends StatelessWidget {
               children: [
                 const Icon(Icons.history, color: _green, size: 22),
                 const SizedBox(width: 8),
-                const Text('Aktivitas Terakhir',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w600, color: _ink)),
+                const Text(
+                  'Aktivitas Terakhir',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: _ink,
+                  ),
+                ),
                 const Spacer(),
                 InkWell(
                   onTap: () => _pindah(context, 3),
-                  child: const Text('Lihat Semua',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: _green)),
+                  child: const Text(
+                    'Lihat Semua',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _green,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -175,11 +228,14 @@ class HomeView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Terima kasih, Warga Hijau!',
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: _ink)),
+                        Text(
+                          'Terima kasih, Warga Hijau!',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: _ink,
+                          ),
+                        ),
                         SizedBox(height: 2),
                         Text(
                           'Aktivitas daur ulang Anda telah mencegah emisi '
@@ -220,18 +276,24 @@ class _Header extends StatelessWidget {
         const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('REGREEN',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
-                    color: _green)),
-            Text('Beranda',
-                style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    height: 1.1,
-                    color: _ink)),
+            Text(
+              'REGREEN',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+                color: _green,
+              ),
+            ),
+            Text(
+              'Beranda',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                height: 1.1,
+                color: _ink,
+              ),
+            ),
           ],
         ),
         const Spacer(),
@@ -258,7 +320,10 @@ class _Foto extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: const Color(0xFFCFE8CF),
-        border: Border.all(color: cincin ? _mint : Colors.white, width: cincin ? 3 : 2),
+        border: Border.all(
+          color: cincin ? _mint : Colors.white,
+          width: cincin ? 3 : 2,
+        ),
       ),
       child: Icon(Icons.person, size: ukuran * 0.6, color: _green),
     );
@@ -282,20 +347,28 @@ class _Sapaan extends StatelessWidget {
                   Icon(Icons.location_on_outlined, size: 16, color: _ink),
                   SizedBox(width: 4),
                   Flexible(
-                    child: Text('KOTA TERNATE, MALUKU UTARA',
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.4,
-                            color: _ink)),
+                    child: Text(
+                      'KOTA TERNATE, MALUKU UTARA',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.4,
+                        color: _ink,
+                      ),
+                    ),
                   ),
                 ],
               ),
               SizedBox(height: 4),
-              Text('Halo, Rizky Pratama! 👋',
-                  style: TextStyle(
-                      fontSize: 24, fontWeight: FontWeight.w600, color: _ink)),
+              Text(
+                'Halo, Rizky Pratama! 👋',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: _ink,
+                ),
+              ),
             ],
           ),
         ),
@@ -312,9 +385,14 @@ class _Sapaan extends StatelessWidget {
                   color: _mint,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('Eco Hero 🌱',
-                    style: TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.w700, color: _dark)),
+                child: const Text(
+                  'Eco Hero 🌱',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _dark,
+                  ),
+                ),
               ),
             ),
           ],
@@ -377,38 +455,52 @@ class _SaldoCard extends StatelessWidget {
                       const Expanded(
                         child: Row(
                           children: [
-                            Icon(Icons.account_balance_wallet_outlined,
-                                size: 20, color: Colors.white70),
+                            Icon(
+                              Icons.account_balance_wallet_outlined,
+                              size: 20,
+                              color: Colors.white70,
+                            ),
                             SizedBox(width: 8),
                             Flexible(
-                              child: Text('TOTAL SALDO SAMPAH',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.8,
-                                      color: Colors.white70)),
+                              child: Text(
+                                'TOTAL SALDO SAMPAH',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.8,
+                                  color: Colors.white70,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: _glass,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.eco_outlined,
-                                size: 14, color: Colors.white),
+                            const Icon(
+                              Icons.eco_outlined,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                             const SizedBox(width: 4),
-                            Text('${_ribuan(_poin)} Poin Hijau',
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white)),
+                            Text(
+                              '${_ribuan(_poin)} Poin Hijau',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -418,16 +510,21 @@ class _SaldoCard extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
-                    child: Text('Rp ${_ribuan(_saldo)}',
-                        style: const TextStyle(
-                            fontSize: 44,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white)),
+                    child: Text(
+                      'Rp ${_ribuan(_saldo)}',
+                      style: const TextStyle(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: _glass,
                       borderRadius: BorderRadius.circular(14),
@@ -437,15 +534,22 @@ class _SaldoCard extends StatelessWidget {
                         Icon(Icons.recycling, size: 20, color: Colors.white),
                         SizedBox(width: 10),
                         Expanded(
-                          child: Text('Total Sampah Terkumpul',
-                              style: TextStyle(
-                                  fontSize: 14, color: Colors.white70)),
-                        ),
-                        Text('124.5kg',
+                          child: Text(
+                            'Total Sampah Terkumpul',
                             style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white)),
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '124.5kg',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -458,10 +562,12 @@ class _SaldoCard extends StatelessWidget {
                           icon: const Icon(Icons.arrow_upward, size: 18),
                           label: const Text('Tarik Saldo'),
                           style: tombol.copyWith(
-                            backgroundColor:
-                                const WidgetStatePropertyAll(Colors.white),
-                            foregroundColor:
-                                const WidgetStatePropertyAll(_dark),
+                            backgroundColor: const WidgetStatePropertyAll(
+                              Colors.white,
+                            ),
+                            foregroundColor: const WidgetStatePropertyAll(
+                              _dark,
+                            ),
                           ),
                         ),
                       ),
@@ -472,10 +578,12 @@ class _SaldoCard extends StatelessWidget {
                           icon: const Icon(Icons.add_circle_outline, size: 18),
                           label: const Text('Setor Sampah'),
                           style: tombol.copyWith(
-                            backgroundColor:
-                                const WidgetStatePropertyAll(_glass),
-                            foregroundColor:
-                                const WidgetStatePropertyAll(Colors.white),
+                            backgroundColor: const WidgetStatePropertyAll(
+                              _glass,
+                            ),
+                            foregroundColor: const WidgetStatePropertyAll(
+                              Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -523,13 +631,16 @@ class _Layanan extends StatelessWidget {
                   child: Icon(icon, color: warnaIcon, size: 26),
                 ),
                 const SizedBox(height: 8),
-                Text(label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        height: 1.25,
-                        color: _ink)),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    height: 1.25,
+                    color: _ink,
+                  ),
+                ),
               ],
             ),
           ),
@@ -559,7 +670,9 @@ class _Edukasi extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: _mintSoft,
                         borderRadius: BorderRadius.circular(20),
@@ -569,11 +682,14 @@ class _Edukasi extends StatelessWidget {
                         children: [
                           Icon(Icons.lightbulb_outline, size: 14, color: _dark),
                           SizedBox(width: 4),
-                          Text('EDUKASI HARI INI',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: _dark)),
+                          Text(
+                            'EDUKASI HARI INI',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: _dark,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -583,10 +699,11 @@ class _Edukasi extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          height: 1.25,
-                          color: _ink),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
+                        color: _ink,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -608,25 +725,54 @@ class _Edukasi extends StatelessWidget {
                   color: const Color(0xFFC9B79C),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.local_drink_outlined,
-                    color: Colors.white, size: 40),
+                child: const Icon(
+                  Icons.local_drink_outlined,
+                  color: Colors.white,
+                  size: 40,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Row(
+
+          // ✅ PERBAIKAN 2: Tombol "Baca Selengkapnya" sekarang bisa diklik
+          Row(
             children: [
-              Icon(Icons.timer_outlined, size: 16, color: _ink),
-              SizedBox(width: 6),
-              Text('3 menit membaca',
-                  style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600, color: _ink)),
-              Spacer(),
-              Text('Baca Selengkapnya',
-                  style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w700, color: _green)),
-              SizedBox(width: 4),
-              Icon(Icons.arrow_forward, size: 16, color: _green),
+              const Icon(Icons.timer_outlined, size: 16, color: _ink),
+              const SizedBox(width: 6),
+              const Text(
+                '3 menit membaca',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _ink,
+                ),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EducationDetailView(),
+                    ),
+                  );
+                },
+                child: const Row(
+                  children: [
+                    Text(
+                      'Baca Selengkapnya',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: _green,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward, size: 16, color: _green),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
@@ -688,35 +834,45 @@ class _Aktivitas extends StatelessWidget {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(judul,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: _ink)),
+                      child: Text(
+                        judul,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: _ink,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: statusBg,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(status,
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: statusFg)),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: statusFg,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(info,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: _muted)),
+                Text(
+                  info,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: _muted),
+                ),
               ],
             ),
           ),
@@ -724,14 +880,19 @@ class _Aktivitas extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(nominal,
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: nominalColor)),
+              Text(
+                nominal,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: nominalColor,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(catatan,
-                  style: const TextStyle(fontSize: 11, color: _muted)),
+              Text(
+                catatan,
+                style: const TextStyle(fontSize: 11, color: _muted),
+              ),
             ],
           ),
         ],
