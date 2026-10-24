@@ -5,6 +5,7 @@ import 'app/modules/home/home_view.dart';
 import 'app/modules/pickup/pickup_view.dart';
 import 'app/modules/history/history_view.dart';
 import 'app/modules/drop_point/drop_point_view.dart';
+import 'app/modules/profile/profile_view.dart';
 
 class MainNavigationView extends StatefulWidget {
   const MainNavigationView({super.key});
@@ -32,7 +33,8 @@ class _MainNavigationViewState extends State<MainNavigationView> {
           const PickupView(showBottomNav: false),
           const CatalogView(),
           const HistoryView(), // ← GANTI placeholder dengan ini
-          const DropPointView(), // ← GANTI placeholder dengan ini
+          const DropPointView(),
+          const ProfileView(), // ← GANTI placeholder dengan ini
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -68,6 +70,11 @@ class _MainNavigationViewState extends State<MainNavigationView> {
             icon: Icon(Icons.location_on_outlined),
             activeIcon: Icon(Icons.location_on),
             label: 'Drop Point',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profil',
           ),
         ],
       ),
