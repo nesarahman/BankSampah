@@ -19,6 +19,7 @@ class _LoginViewState extends State<LoginView> {
   bool _isLocked = false;
   int _lockTimer = 0;
   bool _isLoading = false;
+  bool _obscurePassword = true;
   bool _rememberMe = false;
 
   String _selectedRole = 'Nasabah';
@@ -555,21 +556,48 @@ class _LoginViewState extends State<LoginView> {
                     'Kata Sandi',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  InkWell(
+                  const SizedBox(height: 8),
+                TextField(
+                  controller: _passwordController,
+                  enabled: !_isLocked,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    hintText: '••••••••',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
                     onTap: _isLocked ? null : _showForgotPasswordDialog,
-                    child: const Text(
+                    child: Text(
                       'Lupa Kata Sandi?',
                       style: TextStyle(
-                        color: Colors.green,
+                        color: _isLocked ? Colors.grey : Colors.green,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         decoration: TextDecoration.underline,
-                        decorationColor: Colors.green,
+                        decorationColor: _isLocked ? Colors.grey : Colors.green,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
