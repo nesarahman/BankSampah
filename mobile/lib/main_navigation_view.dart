@@ -7,6 +7,7 @@ import 'app/modules/home/home_view.dart';
 import 'app/modules/pickup/pickup_view.dart';
 import 'app/modules/history/history_view.dart';
 import 'app/modules/drop_point/drop_point_view.dart';
+import 'app/modules/profile/profile_view.dart';
 
 // 2. STATEFULWIDGET: Kita gunakan StatefulWidget karena halaman ini perlu 
 // "mengingat" (menyimpan state) tab mana yang sedang aktif.
@@ -44,11 +45,20 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
+<<<<<<< HEAD
           HomeView(onTabSelected: _onItemTapped),       // Index 0: Beranda
           const PickupView(showBottomNav: false),       // Index 1: Jemput
           const CatalogView(),                          // Index 2: Katalog
           const HistoryView(),                          // Index 3: Riwayat
           const DropPointView(),                        // Index 4: Drop Point
+=======
+          HomeView(onTabSelected: _onItemTapped),
+          const PickupView(showBottomNav: false),
+          const CatalogView(),
+          const HistoryView(), // ← GANTI placeholder dengan ini
+          const DropPointView(),
+          const ProfileView(), // ← GANTI placeholder dengan ini
+>>>>>>> origin/fitur-profil
         ],
       ),
 
@@ -97,6 +107,11 @@ class _MainNavigationViewState extends State<MainNavigationView> {
             icon: Icon(Icons.location_on_outlined),
             activeIcon: Icon(Icons.location_on),
             label: 'Drop Point',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profil',
           ),
         ],
       ),
