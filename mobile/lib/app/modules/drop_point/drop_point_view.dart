@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../api_service.dart';
 
 class DropPointView extends StatefulWidget {
   const DropPointView({super.key});
@@ -15,7 +16,33 @@ class _DropPointViewState extends State<DropPointView> {
   String searchQuery = '';
   int selectedFilter = 0;
 
-  final List<Map<String, dynamic>> locations = [
+  @override
+  void initState() {
+    super.initState();
+    _fetchDropPoints();
+  }
+
+  Future<void> _fetchDropPoints() async {
+    final list = await ApiService.getDropPoints();
+    if (list.isNotEmpty && mounted) {
+      setState(() {
+        locations = list.map((e) {
+          final jamBuka = e['jam_buka']?.toString().substring(0, 5) ?? '08:00';
+          final jamTutup = e['jam_tutup']?.toString().substring(0, 5) ?? '17:00';
+          return {
+            'name': e['nama'] ?? 'Bank Sampah',
+            'address': e['alamat'] ?? 'Kota Ternate',
+            'distance': '1.5 km',
+            'hours': 'Buka $jamBuka - $jamTutup WIT',
+            'types': ['Plastik', 'Kertas', 'Logam', 'Minyak Jelantah'],
+            'open': true,
+          };
+        }).toList();
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> locations = [
     {
       'name': 'Bank Sampah Jati Metro',
       'address': 'Jl. Jati Lurus No. 88, Ternate Selatan',
