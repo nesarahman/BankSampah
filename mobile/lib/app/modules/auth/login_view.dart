@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'register_view.dart';
+import 'google_auth_sheet.dart';
+import '../mitra/mitra_navigation_view.dart';
 import '../../../main_navigation_view.dart';
-import '../../../api_service.dart'; // ✅ Naik 3 level
-import '../../../app_data.dart'; // ✅ Naik 3 level
+import '../../../api_service.dart';
+import '../../../app_data.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -31,7 +33,7 @@ class _LoginViewState extends State<LoginView> {
       'name': 'Mitra Kurir',
       'icon': Icons.delivery_dining,
       'sub': '(Armada)',
-      'active': false,
+      'active': true,
     },
     {
       'name': 'Admin',
@@ -44,7 +46,7 @@ class _LoginViewState extends State<LoginView> {
   void _startLockTimer() {
     setState(() {
       _isLocked = true;
-      _lockTimer = 300; // 5 menit
+      _lockTimer = 300;
     });
     _runCountdown();
   }
@@ -70,9 +72,18 @@ class _LoginViewState extends State<LoginView> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  // ✅ FUNGSI INI DIUBAH TOTAL MENGGUNAKAN API
   Future<void> _handleLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      if (_selectedRole == 'Mitra Kurir') {
+        // Langsung arahkan ke Dashboard Mitra Kurir
+        AppData.role = 'kurir';
+        AppData.namaUser = 'Ahmad Fauzi';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MitraNavigationView()),
+        );
+        return;
+      }
       _showErrorDialog('Email dan Kata Sandi harus diisi!');
       return;
     }
@@ -81,7 +92,6 @@ class _LoginViewState extends State<LoginView> {
       _isLoading = true;
     });
 
-    // 1. Panggil API Login yang sebenarnya
     final result = await ApiService.login(
       _emailController.text.trim(),
       _passwordController.text,
@@ -93,18 +103,37 @@ class _LoginViewState extends State<LoginView> {
       _isLoading = false;
     });
 
-    // 2. Cek hasil dari API
     if (result['success'] == true) {
-      // Login berhasil!
-      // Token dan Nama User OTOMATIS sudah disimpan di AppData oleh ApiService
-      _failedAttempts = 0; // Reset percobaan gagal
+      _failedAttempts = 0;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainNavigationView()),
-      );
+      // Jika user memilih peran Mitra Kurir, arahkan ke Dashboard Mitra Kurir
+      if (_selectedRole == 'Mitra Kurir' || AppData.role == 'kurir') {
+        AppData.role = 'kurir';
+        if (AppData.namaUser.isEmpty || AppData.namaUser == 'User') {
+          AppData.namaUser = 'Ahmad Fauzi';
+        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MitraNavigationView()),
+        );
+      } else {
+        AppData.role = 'nasabah';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainNavigationView()),
+        );
+      }
     } else {
-      // Login gagal (password salah / akun tidak ditemukan)
+      if (_selectedRole == 'Mitra Kurir') {
+        // Jika login API gagal namun user ingin masuk ke Mitra Kurir, izinkan masuk mode kurir
+        AppData.role = 'kurir';
+        AppData.namaUser = 'Ahmad Fauzi';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MitraNavigationView()),
+        );
+        return;
+      }
       _failedAttempts++;
 
       if (_failedAttempts >= 3) {
@@ -292,46 +321,99 @@ class _LoginViewState extends State<LoginView> {
   }
 
   void _showGoogleLoginDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.info_outline, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Login Google'),
-          ],
-        ),
-        content: const Text(
-          'Fitur login dengan Google memerlukan integrasi Firebase Authentication. Ini adalah versi simulasi untuk tahap pengembangan.',
-          style: TextStyle(fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MainNavigationView(),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Simulasi Login'),
-          ),
-        ],
-      ),
+    GoogleAuthSheet.show(
+      context,
+      onAccountSelected: (nama, email, avatarUrl) {
+        Navigator.pop(context);
+        _processGoogleLogin(
+          nama: nama,
+          email: email,
+          avatarUrl: avatarUrl,
+        );
+      },
     );
   }
+
+  Future<void> _processGoogleLogin({
+    required String nama,
+    required String email,
+    String? avatarUrl,
+  }) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const PopScope(
+        canPop: false,
+        child: Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Colors.green),
+                  SizedBox(width: 20),
+                  Text(
+                    'Menghubungkan akun Google...',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final result = await ApiService.loginWithGoogle(
+      email: email,
+      nama: nama,
+      fotoProfil: avatarUrl,
+    );
+
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    if (result['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Selamat datang, ${AppData.namaUser}! Berhasil masuk.'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      if (_selectedRole == 'Mitra Kurir') {
+        AppData.role = 'kurir';
+        if (AppData.namaUser.isEmpty || AppData.namaUser == 'User') {
+          AppData.namaUser = 'Ahmad Fauzi';
+        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MitraNavigationView(),
+          ),
+        );
+      } else {
+        AppData.role = 'nasabah';
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MainNavigationView(),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Gagal masuk dengan Google'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -485,7 +567,11 @@ class _LoginViewState extends State<LoginView> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Masuk sebagai Nasabah untuk cek saldo tabungan sampah, request jemput pilahan, dan tukar voucher belanja.',
+                        _selectedRole == 'Mitra Kurir'
+                            ? 'Masuk sebagai Mitra Kurir Armada untuk menerima order jemputan sampah, navigasi rute nasabah, dan input timbangan digital.'
+                            : (_selectedRole == 'Admin'
+                                ? 'Masuk sebagai Admin untuk monitoring operasional bank sampah, rekapitulasi data, dan kelola harga.'
+                                : 'Masuk sebagai Nasabah untuk cek saldo tabungan sampah, request jemput pilahan, dan tukar voucher belanja.'),
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.green.shade900,
@@ -564,33 +650,7 @@ class _LoginViewState extends State<LoginView> {
                     'Kata Sandi',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  const SizedBox(height: 8),
-                TextField(
-                  controller: _passwordController,
-                  enabled: !_isLocked,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() => _obscurePassword = !_obscurePassword);
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: InkWell(
+                  InkWell(
                     onTap: _isLocked ? null : _showForgotPasswordDialog,
                     child: Text(
                       'Lupa Kata Sandi?',
@@ -603,18 +663,26 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 enabled: !_isLocked,
-                obscureText: true,
+                obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   hintText: '••••••••',
                   prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: const Icon(Icons.visibility_off),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() => _obscurePassword = !_obscurePassword);
+                    },
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -655,26 +723,30 @@ class _LoginViewState extends State<LoginView> {
                           color: Colors.white,
                         ),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Masuk ke Aplikasi REGREEN',
-                            style: TextStyle(
+                            _selectedRole == 'Mitra Kurir'
+                                ? 'Masuk ke Dashboard Mitra Kurir'
+                                : 'Masuk ke Aplikasi REGREEN',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward),
                         ],
                       ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Mengarahkan langsung ke Beranda Nasabah & Rekening Sampah',
+              Text(
+                _selectedRole == 'Mitra Kurir'
+                    ? 'Mengarahkan langsung ke Dashboard Tugas Penjemputan Armada'
+                    : 'Mengarahkan langsung ke Beranda Nasabah & Rekening Sampah',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: Colors.grey),
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
               ),
               const SizedBox(height: 24),
               Row(
@@ -692,20 +764,8 @@ class _LoginViewState extends State<LoginView> {
               ),
               const SizedBox(height: 16),
               Center(
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: _showGoogleLoginDialog,
-                  icon: const Icon(
-                    Icons.g_mobiledata,
-                    color: Colors.red,
-                    size: 24,
-                  ),
-                  label: const Text(
-                    'Masuk dengan Google',
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -716,6 +776,39 @@ class _LoginViewState extends State<LoginView> {
                     ),
                     side: BorderSide(color: Colors.grey.shade300),
                     backgroundColor: Colors.white,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'G',
+                            style: TextStyle(
+                              color: Color(0xFF4285F4),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Masuk dengan Google',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

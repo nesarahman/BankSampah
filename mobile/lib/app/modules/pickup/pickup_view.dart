@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../api_service.dart';
+import '../../../app_data.dart';
 
 const _bg = Color(0xFFF7F8FF);
 const _dark = Color(0xFF1B5E20);
@@ -146,31 +148,77 @@ class _PickupViewState extends State<PickupView> {
     }
   }
 
-  void _jemput() {
+  Future<void> _jemput() async {
     final k = _kategoriList[_kategori];
     final d = _hari[_tanggal];
     final catatan = _catatan.text.trim();
-    // TODO (integrasi API): kirim ke POST /api/penjemputan
-    showDialog<void>(
+    final tanggalStr = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    final sesiStr = _sesi == 0 ? 'PAGI' : 'SORE';
+    final jenisId = _kategori + 1;
+
+    showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Pengajuan Terkirim'),
-        content: Text(
-          '${k.nama} • $_berat kg\n'
-          'Estimasi ${_rp(_estimasi)}\n'
-          '${_namaHari[d.weekday - 1]}, ${d.day} ${_namaBulan[d.month - 1]} • '
-          '${_sesiList[_sesi].label}\n'
-          'Jl. Revolusi No. 42, Kalumata, Ternate'
-          '${catatan.isEmpty ? '' : '\nCatatan: $catatan'}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(color: _green),
       ),
     );
+
+    final result = await ApiService.ajukanPenjemputan(
+      tanggal: tanggalStr,
+      sesi: sesiStr,
+      lokasi: 'Jl. Revolusi No. 42, Kalumata, Ternate',
+      jenisSampahId: jenisId,
+      berat: _berat.toDouble(),
+      catatan: catatan,
+    );
+
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    if (result['success'] == true) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle, color: _green),
+              SizedBox(width: 8),
+              Text('Pengajuan Terkirim'),
+            ],
+          ),
+          content: Text(
+            '${k.nama} • $_berat kg\n'
+            'Estimasi ${_rp(_estimasi)}\n'
+            '${_namaHari[d.weekday - 1]}, ${d.day} ${_namaBulan[d.month - 1]} • '
+            '${_sesiList[_sesi].label}\n'
+            'Jl. Revolusi No. 42, Kalumata, Ternate'
+            '${catatan.isEmpty ? '' : '\nCatatan: $catatan'}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _pindahTab(3);
+              },
+              child: const Text('Lihat Riwayat'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(backgroundColor: _green),
+              child: const Text('OK', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Gagal mengajukan penjemputan'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

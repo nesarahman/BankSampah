@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'education_detail_view.dart';
 import 'withdraw_view.dart';
+import '../profile/profile_view.dart';
+import '../mitra/mitra_navigation_view.dart';
+import '../../../api_service.dart';
+import '../../../app_data.dart';
 
 const _bg = Color(0xFFF7F8FF);
 const _dark = Color(0xFF1B5E20);
@@ -33,11 +37,18 @@ BoxDecoration _kartu() => BoxDecoration(
   ],
 );
 
-class HomeView extends StatelessWidget {
+class HomeView extends StatefulWidget {
   const HomeView({super.key, this.onTabSelected});
 
   /// Index tab: 0 Beranda, 1 Jemput, 2 Katalog, 3 Riwayat, 4 Drop Point.
   final ValueChanged<int>? onTabSelected;
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  bool _isLoading = false;
 
   static const _namaTab = [
     'Beranda',
@@ -47,10 +58,26 @@ class HomeView extends StatelessWidget {
     'Drop Point',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchDashboard();
+  }
+
+  Future<void> _fetchDashboard() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    await ApiService.getDashboard();
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+  }
+
   void _pindah(BuildContext context, int tab) {
     if (tab == 0) return;
-    if (onTabSelected != null) {
-      onTabSelected!(tab);
+    if (widget.onTabSelected != null) {
+      widget.onTabSelected!(tab);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${_namaTab[tab]}: navigasi belum tersambung')),
@@ -63,24 +90,34 @@ class HomeView extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          children: [
-            const _Header(),
-            const SizedBox(height: 14),
-            const _Sapaan(),
-            const SizedBox(height: 14),
+        child: RefreshIndicator(
+          onRefresh: _fetchDashboard,
+          color: _green,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            children: [
+              const _Header(),
+              const SizedBox(height: 14),
+              _Sapaan(nama: AppData.namaUser),
+              const SizedBox(height: 14),
 
-            // ✅ PERBAIKAN 1: Tombol Tarik Saldo sekarang menuju WithdrawView
-            _SaldoCard(
-              onTarik: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const WithdrawView()),
-                );
-              },
-              onSetor: () => _pindah(context, 1),
-            ),
+              // ✅ Kartu Saldo Dinamis terhubung ke AppData & Backend
+              _SaldoCard(
+                saldo: AppData.saldoTersedia,
+                poin: AppData.poinHijau,
+                totalSampah: AppData.totalSampah,
+                isLoading: _isLoading,
+                onTarik: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const WithdrawView()),
+                  );
+                  if (result == true || mounted) {
+                    _fetchDashboard();
+                  }
+                },
+                onSetor: () => _pindah(context, 1),
+              ),
 
             const SizedBox(height: 24),
             const Row(
@@ -251,8 +288,9 @@ class HomeView extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ---------------------------------------------------------------- Header
@@ -297,16 +335,42 @@ class _Header extends StatelessWidget {
           ],
         ),
         const Spacer(),
+        IconButton(
+          tooltip: 'Mode Mitra Kurir (Armada)',
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.two_wheeler, color: _green, size: 20),
+          ),
+          onPressed: () {
+            AppData.role = 'kurir';
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MitraNavigationView()),
+            );
+          },
+        ),
+        const SizedBox(width: 4),
         const Icon(Icons.notifications_none, color: _ink, size: 26),
         const SizedBox(width: 12),
-        const _Foto(ukuran: 40),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileView()),
+            );
+          },
+          child: const _Foto(ukuran: 40),
+        ),
       ],
     );
   }
 }
 
-/// Foto profil. Ganti child dengan Image.asset('assets/foto.jpg', fit: BoxFit.cover)
-/// (jangan lupa daftarkan di pubspec.yaml bagian assets).
+/// Foto profil (Mendukung foto dari Google atau Avatar Default)
 class _Foto extends StatelessWidget {
   const _Foto({required this.ukuran, this.cincin = false});
   final double ukuran;
@@ -324,25 +388,39 @@ class _Foto extends StatelessWidget {
           color: cincin ? _mint : Colors.white,
           width: cincin ? 3 : 2,
         ),
+        image: AppData.fotoProfil.isNotEmpty
+            ? DecorationImage(
+                image: NetworkImage(AppData.fotoProfil),
+                fit: BoxFit.cover,
+              )
+            : null,
       ),
-      child: Icon(Icons.person, size: ukuran * 0.6, color: _green),
+      child: AppData.fotoProfil.isEmpty
+          ? Icon(Icons.person, size: ukuran * 0.6, color: _green)
+          : null,
     );
   }
 }
 
 class _Sapaan extends StatelessWidget {
-  const _Sapaan();
+  const _Sapaan({this.nama = ''});
+
+  final String nama;
 
   @override
   Widget build(BuildContext context) {
+    final displayName = nama.isNotEmpty
+        ? nama
+        : (AppData.namaUser.isNotEmpty ? AppData.namaUser : 'Warga REGREEN');
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              const Row(
                 children: [
                   Icon(Icons.location_on_outlined, size: 16, color: _ink),
                   SizedBox(width: 4),
@@ -360,10 +438,10 @@ class _Sapaan extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                'Halo, Rizky Pratama! 👋',
-                style: TextStyle(
+                'Halo, $displayName! 👋',
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                   color: _ink,
@@ -404,13 +482,21 @@ class _Sapaan extends StatelessWidget {
 
 // ------------------------------------------------------------ Kartu saldo
 class _SaldoCard extends StatelessWidget {
-  const _SaldoCard({required this.onTarik, required this.onSetor});
+  const _SaldoCard({
+    required this.saldo,
+    required this.poin,
+    required this.totalSampah,
+    this.isLoading = false,
+    required this.onTarik,
+    required this.onSetor,
+  });
+
+  final int saldo;
+  final int poin;
+  final String totalSampah;
+  final bool isLoading;
   final VoidCallback onTarik;
   final VoidCallback onSetor;
-
-  // DUMMY DATA
-  static const int _saldo = 348500;
-  static const int _poin = 1420;
 
   @override
   Widget build(BuildContext context) {
@@ -494,7 +580,7 @@ class _SaldoCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${_ribuan(_poin)} Poin Hijau',
+                              '${_ribuan(poin)} Poin Hijau',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -511,7 +597,7 @@ class _SaldoCard extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Rp ${_ribuan(_saldo)}',
+                      'Rp ${_ribuan(saldo)}',
                       style: const TextStyle(
                         fontSize: 44,
                         fontWeight: FontWeight.w800,
@@ -529,11 +615,11 @@ class _SaldoCard extends StatelessWidget {
                       color: _glass,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.recycling, size: 20, color: Colors.white),
-                        SizedBox(width: 10),
-                        Expanded(
+                        const Icon(Icons.recycling, size: 20, color: Colors.white),
+                        const SizedBox(width: 10),
+                        const Expanded(
                           child: Text(
                             'Total Sampah Terkumpul',
                             style: TextStyle(
@@ -543,8 +629,8 @@ class _SaldoCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '124.5kg',
-                          style: TextStyle(
+                          totalSampah.isNotEmpty ? totalSampah : '0 kg',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,

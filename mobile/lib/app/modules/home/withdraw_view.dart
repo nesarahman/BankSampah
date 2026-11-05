@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../api_service.dart';
 import '../../../app_data.dart';
 
 class WithdrawView extends StatefulWidget {
@@ -40,7 +41,7 @@ class _WithdrawViewState extends State<WithdrawView> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Card Saldo - ✅ AMBIL DARI APPDATA (SAMA PERSIS DENGAN DASHBOARD)
+            // Card Saldo - Terhubung ke AppData & Backend
             Container(
               width: double.infinity,
               margin: const EdgeInsets.all(16),
@@ -62,7 +63,7 @@ class _WithdrawViewState extends State<WithdrawView> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Rp ${AppData.formatAngka(AppData.saldoTersedia)}', // ✅ HARUS SEPERTI INI
+                    'Rp ${AppData.formatAngka(AppData.saldoTersedia)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -124,11 +125,12 @@ class _WithdrawViewState extends State<WithdrawView> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: ['10.000', '25.000', '50.000', '100.000'].map((
+                    children: ['10000', '25000', '50000', '100000'].map((
                       amount,
                     ) {
+                      final formatted = AppData.formatAngka(int.parse(amount));
                       return GestureDetector(
-                        onTap: () => _amountController.text = amount,
+                        onTap: () => _amountController.text = formatted,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -140,7 +142,7 @@ class _WithdrawViewState extends State<WithdrawView> {
                             border: Border.all(color: Colors.grey[300]!),
                           ),
                           child: Text(
-                            'Rp $amount',
+                            'Rp $formatted',
                             style: const TextStyle(
                               fontSize: 11,
                               color: Colors.black87,
@@ -202,15 +204,40 @@ class _WithdrawViewState extends State<WithdrawView> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (_amountController.text.isEmpty) {
+                    final raw = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+                    final jumlah = int.tryParse(raw) ?? 0;
+
+                    if (jumlah <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Masukkan nominal penarikan'),
+                          backgroundColor: Colors.red,
                         ),
                       );
                       return;
                     }
-                    _showConfirmationDialog(context);
+
+                    if (jumlah < 10000) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Minimal penarikan adalah Rp 10.000'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (jumlah > AppData.saldoTersedia) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Saldo Anda tidak mencukupi'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    _showConfirmationDialog(context, jumlah);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E7D32),
@@ -235,7 +262,7 @@ class _WithdrawViewState extends State<WithdrawView> {
     );
   }
 
-  void _showConfirmationDialog(BuildContext context) {
+  void _showConfirmationDialog(BuildContext context, int jumlahTarik) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -251,7 +278,7 @@ class _WithdrawViewState extends State<WithdrawView> {
             const Text('Anda akan menarik saldo sebesar:'),
             const SizedBox(height: 8),
             Text(
-              'Rp ${_amountController.text}',
+              'Rp ${AppData.formatAngka(jumlahTarik)}',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -271,9 +298,9 @@ class _WithdrawViewState extends State<WithdrawView> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              _showSuccessDialog(context);
+              await _prosesPenarikan(context, jumlahTarik);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2E7D32),
@@ -285,18 +312,41 @@ class _WithdrawViewState extends State<WithdrawView> {
     );
   }
 
-  void _showSuccessDialog(BuildContext context) {
-    int jumlahTarik =
-        int.tryParse(
-          _amountController.text.replaceAll(RegExp(r'[^0-9]'), ''),
-        ) ??
-        0;
-    if (jumlahTarik > 0 && jumlahTarik <= AppData.saldoTersedia) {
-      AppData.saldoTersedia -= jumlahTarik; // ✅ Saldo berkurang
-    }
-
+  Future<void> _prosesPenarikan(BuildContext context, int jumlahTarik) async {
+    // Tampilkan loading dialog
     showDialog(
       context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+      ),
+    );
+
+    final res = await ApiService.tarikSaldo(
+      nominal: jumlahTarik,
+      metode: _selectedMethod,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context); // Tutup loading dialog
+
+    if (res['success'] == true) {
+      setState(() {}); // Update tampilan saldo di withdraw view
+      _showSuccessDialog(context, jumlahTarik);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['message'] ?? 'Penarikan gagal diproses'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showSuccessDialog(BuildContext context, int jumlahTarik) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Column(
@@ -330,8 +380,8 @@ class _WithdrawViewState extends State<WithdrawView> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.pop(context);
+                  Navigator.pop(ctx); // Tutup dialog sukses
+                  Navigator.pop(context, true); // Kembali ke Beranda dan minta refresh saldo
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2E7D32),
