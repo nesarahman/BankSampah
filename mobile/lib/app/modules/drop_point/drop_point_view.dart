@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class DropPointView extends StatefulWidget {
@@ -16,8 +15,10 @@ class _DropPointViewState extends State<DropPointView> {
   String searchQuery = '';
   int selectedFilter = 0;
 
-  final List<Map<String, dynamic>> locations = [
+  // BENAR:
+final locations = [
     {
+      'id': '1',
       'name': 'Bank Sampah Jati Metro',
       'address': 'Jl. Jati Lurus No. 88, Ternate Selatan',
       'distance': '1.2 km',
@@ -26,6 +27,7 @@ class _DropPointViewState extends State<DropPointView> {
       'open': true,
     },
     {
+      'id': '2',
       'name': 'REGREEN Eco Hub Kalumata',
       'address': 'Kalumata, Ternate Selatan',
       'distance': '2.4 km',
@@ -34,6 +36,7 @@ class _DropPointViewState extends State<DropPointView> {
       'open': true,
     },
     {
+      'id': '3',
       'name': 'Bank Sampah Gamalama',
       'address': 'Area pusat Kota Ternate',
       'distance': '3.1 km',
@@ -46,14 +49,28 @@ class _DropPointViewState extends State<DropPointView> {
   @override
   Widget build(BuildContext context) {
     final filteredLocations = locations.where((location) {
-      final name = location['name'].toString().toLowerCase();
-      return name.contains(searchQuery.toLowerCase());
+      final matchesSearch = location['name']
+              .toString()
+              .toLowerCase()
+              .contains(searchQuery.toLowerCase()) ||
+          location['address']
+              .toString()
+              .toLowerCase()
+              .contains(searchQuery.toLowerCase());
+
+      bool matchesFilter = true;
+      if (selectedFilter == 1) {
+        matchesFilter = location['open'] == true;
+      } else if (selectedFilter == 2) {
+        final types = (location['types'] as List).cast<String>();
+        matchesFilter = types.contains('Minyak Jelantah');
+      }
+
+      return matchesSearch && matchesFilter;
     }).toList();
 
     return Scaffold(
       backgroundColor: background,
-      // Tidak ada bottomNavigationBar di sini.
-      // Navigasi utama tetap diatur oleh halaman induk.
       body: SafeArea(
         child: Column(
           children: [
@@ -68,7 +85,7 @@ class _DropPointViewState extends State<DropPointView> {
                     const SizedBox(height: 12),
                     _buildFilters(),
                     const SizedBox(height: 14),
-                    _buildMap(),
+                    _buildMap(filteredLocations.length),
                     const SizedBox(height: 12),
                     _buildActionButtons(),
                     const SizedBox(height: 18),
@@ -152,7 +169,7 @@ class _DropPointViewState extends State<DropPointView> {
     );
   }
 
-  // SEARCH
+  // SEARCH BAR
   Widget _buildSearch() {
     return Container(
       decoration: BoxDecoration(
@@ -178,13 +195,9 @@ class _DropPointViewState extends State<DropPointView> {
     );
   }
 
-  // FILTER
+  // FILTER CHIPS
   Widget _buildFilters() {
-    const filters = [
-      '< 5 km',
-      'Buka Sekarang',
-      'Terima Jelantah',
-    ];
+    const filters = ['< 5 km', 'Buka Sekarang', 'Terima Jelantah'];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -229,8 +242,8 @@ class _DropPointViewState extends State<DropPointView> {
     );
   }
 
-  // PETA ILUSTRASI
-  Widget _buildMap() {
+  // TAMPILAN PETA ILUSTRASI
+  Widget _buildMap(int totalCount) {
     return Container(
       height: 218,
       clipBehavior: Clip.antiAlias,
@@ -272,15 +285,6 @@ class _DropPointViewState extends State<DropPointView> {
               iconColor: Colors.white,
             ),
           ),
-          const Positioned(
-            left: 66,
-            top: 98,
-            child: _MapMarker(
-              icon: Icons.location_on,
-              color: Colors.white,
-              iconColor: Color(0xFF08752D),
-            ),
-          ),
           Positioned(
             left: 65,
             top: 107,
@@ -304,25 +308,6 @@ class _DropPointViewState extends State<DropPointView> {
             ),
           ),
           Positioned(
-            right: 10,
-            top: 12,
-            child: Column(
-              children: [
-                _mapControl(Icons.add, () {
-                  _showMessage('Perbesar peta');
-                }),
-                const SizedBox(height: 5),
-                _mapControl(Icons.remove, () {
-                  _showMessage('Perkecil peta');
-                }),
-                const SizedBox(height: 10),
-                _mapControl(Icons.my_location, () {
-                  _showMessage('Lokasi GPS belum diaktifkan');
-                }),
-              ],
-            ),
-          ),
-          Positioned(
             left: 10,
             bottom: 10,
             child: Container(
@@ -334,9 +319,9 @@ class _DropPointViewState extends State<DropPointView> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
-                '3 Bank Sampah di sekitarmu',
-                style: TextStyle(
+              child: Text(
+                '$totalCount Bank Sampah di sekitarmu',
+                style: const TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                 ),
@@ -344,22 +329,6 @@ class _DropPointViewState extends State<DropPointView> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _mapControl(IconData icon, VoidCallback onTap) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(icon, size: 19, color: green),
-        ),
       ),
     );
   }
@@ -374,7 +343,7 @@ class _DropPointViewState extends State<DropPointView> {
             label: 'Navigasi Langsung',
             color: Colors.white,
             textColor: green,
-            onTap: () => _showMessage('Pilih lokasi untuk navigasi'),
+            onTap: () => _showMessage('Pilih lokasi pada daftar di bawah'),
           ),
         ),
         const SizedBox(width: 10),
@@ -405,10 +374,7 @@ class _DropPointViewState extends State<DropPointView> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(30),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 7,
-            vertical: 13,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -433,7 +399,6 @@ class _DropPointViewState extends State<DropPointView> {
     );
   }
 
-  // JUDUL LOKASI
   Widget _buildSectionTitle() {
     return Row(
       children: [
@@ -463,7 +428,8 @@ class _DropPointViewState extends State<DropPointView> {
 
   // KARTU LOKASI
   Widget _buildLocationCard(Map<String, dynamic> location) {
-    final types = List<String>.from(location['types'] as List);
+    final types = (location['types'] as List).cast<String>();
+    final isOpen = location['open'] == true;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -515,12 +481,11 @@ class _DropPointViewState extends State<DropPointView> {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      '${location['open'] == true ? 'Buka' : 'Tutup'} • ${location['hours']}',
+                      '${isOpen ? "Buka" : "Tutup"} • ${location['hours']}',
                       style: TextStyle(
                         fontSize: 10,
-                        color: location['open'] == true
-                            ? green
-                            : Colors.orange,
+                        color: isOpen ? green : Colors.orange,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -585,7 +550,7 @@ class _DropPointViewState extends State<DropPointView> {
                   color: const Color(0xFFE1EAFF),
                   textColor: const Color(0xFF1645A0),
                   onTap: () => _showMessage(
-                    'Rute ke ${location['name']} dipilih',
+                    'Petunjuk rute ke ${location['name']}',
                   ),
                 ),
               ),
@@ -597,7 +562,7 @@ class _DropPointViewState extends State<DropPointView> {
                   color: green,
                   textColor: Colors.white,
                   onTap: () => _showMessage(
-                    'Setor mandiri ke ${location['name']} dipilih',
+                    'Setor mandiri di ${location['name']}',
                   ),
                 ),
               ),
@@ -622,10 +587,7 @@ class _DropPointViewState extends State<DropPointView> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(30),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 5,
-            vertical: 11,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 11),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -663,7 +625,7 @@ class _DropPointViewState extends State<DropPointView> {
   }
 }
 
-// ILUSTRASI PETA
+// MARKER PETA ILUSTRASI
 class _MapMarker extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -690,14 +652,12 @@ class _MapMarker extends StatelessWidget {
   }
 }
 
+// CANVAS PETA ILUSTRASI
 class MapBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()
-      ..color = const Color(0xFFE6EDFF);
-
-    final parkPaint = Paint()
-      ..color = const Color(0xFFB8DCB5);
+    final backgroundPaint = Paint()..color = const Color(0xFFE6EDFF);
+    final parkPaint = Paint()..color = const Color(0xFFB8DCB5);
 
     final roadBorderPaint = Paint()
       ..color = const Color(0xFFC8D4C7)
@@ -740,7 +700,5 @@ class MapBackgroundPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant MapBackgroundPainter oldDelegate) {
-    return false;
-  }
+  bool shouldRepaint(covariant MapBackgroundPainter oldDelegate) => false;
 }
