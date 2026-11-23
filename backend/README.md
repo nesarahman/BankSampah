@@ -1,59 +1,47 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Database REGREEN – Bank Sampah
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+| File | Isi |
+|---|---|
+| `schema.sql` | Struktur tabel, relasi, dan view (MySQL/MariaDB) |
+| `seed.sql` | Data demo: 1 admin, 1 mitra, 3 kurir, 2 nasabah, jenis sampah, drop point, contoh transaksi |
 
-## About Laravel
+## Cara pakai
+```bash
+mysql -u root -p < schema.sql
+mysql -u root -p < seed.sql
+```
+Lalu di `backend/.env` set `DB_CONNECTION=mysql`, `DB_DATABASE=regreen_banksampah`.
+Jika memakai SQL ini, **jangan** jalankan `php artisan migrate` pada database yang sama.
+Jika memilih migrasi Laravel, cukup `php artisan migrate --seed` dan folder ini jadi dokumentasi.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Peran (`users.role`)
+| Role | Fungsi |
+|---|---|
+| `nasabah` | Menyetor/mengajukan penjemputan, punya saldo & poin hijau, menilai kurir, tarik saldo |
+| `mitra` | Pemilik bank sampah: terima permintaan, tugaskan kurir, bayar nasabah, bayar gaji kurir |
+| `kurir` | Menjemput & menimbang sampah (kolom `kendaraan`, `plat_nomor`) |
+| `admin` | Atur harga sampah, setujui/tolak penarikan, kelola user (maks. 1 akun, aturan di model User) |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## ERD
+```mermaid
+erDiagram
+  users ||--o{ penjemputans : "nasabah (user_id)"
+  users ||--o{ penjemputans : "kurir (kurir_id)"
+  users ||--o{ drop_points : "mitra (mitra_id)"
+  users ||--o{ setoran_sampahs : "user_id"
+  users ||--o{ transaksis : "user_id"
+  users ||--o{ riwayats : "user_id"
+  users ||--o{ gaji_kurirs : "kurir_id"
+  users ||--o{ gaji_kurirs : "dibayar_oleh (mitra)"
+  penjemputans ||--|{ penjemputan_details : ""
+  jenis_sampahs ||--o{ penjemputan_details : ""
+  jenis_sampahs ||--o{ setoran_sampahs : ""
+  drop_points ||--o{ setoran_sampahs : ""
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Alur status penjemputan
+`DIAJUKAN` → `DITERIMA` (mitra) → `DALAM PROSES` (kurir ditugaskan) → `DIJEMPUT` (ditimbang) → `SELESAI` (dibayar) | `DIBATALKAN`
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Catatan
+`drop_points.mitra_id` adalah tambahan baru (belum ada di migrasi backend) agar tiap bank sampah punya pemilik.
+Jika dipakai, tambahkan migrasinya di Laravel dan `mitra_id` di model `DropPoint`.
