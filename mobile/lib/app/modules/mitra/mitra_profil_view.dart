@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../auth/login_view.dart';
+import 'mitra_pengepul_view.dart';
+import 'mitra_tugas_view.dart';
+import 'pemilik_gaji_kurir_view.dart';
 import '../../../main_navigation_view.dart';
 import '../../../api_service.dart';
 import '../../../app_data.dart';
@@ -203,7 +206,8 @@ class _MitraProfilViewState extends State<MitraProfilView> {
         backgroundColor: primaryGreen,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Profil Mitra Kurir', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
+        title: const Text('Profil Mitra Pengepul', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -255,12 +259,12 @@ class _MitraProfilViewState extends State<MitraProfilView> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'ID Armada: $idArmada',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  const Text(
+                    'Mitra Pengelola Bank Sampah & Pengepul',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   Text(
-                    '$email • $noHp',
+                    'ID Unit: $idArmada • $noHp',
                     style: const TextStyle(color: Colors.white60, fontSize: 11),
                   ),
                   const SizedBox(height: 6),
@@ -405,22 +409,47 @@ class _MitraProfilViewState extends State<MitraProfilView> {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.people_outline, color: primaryGreen),
-                      title: const Text('Beralih ke Mode Nasabah (Warga)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Kelola tabungan sampah pribadi Anda', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      leading: const Icon(Icons.payments_outlined, color: primaryGreen),
+                      title: const Text('Manajemen Kurir & Penggajian Armada', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Kelola kinerja kurir, poin rating nasabah, dan pembayaran gaji armada', style: TextStyle(fontSize: 11, color: Colors.grey)),
                       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
                       onTap: () {
-                        AppData.role = 'nasabah';
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const MainNavigationView()),
+                          MaterialPageRoute(builder: (context) => const PemilikGajiKurirView()),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.two_wheeler, color: primaryGreen),
+                      title: const Text('Armada Penjemputan Kurir Lapangan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Pantau pesanan jemput sampah nasabah di lapangan', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const MitraTugasView()),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.hub_outlined, color: primaryGreen),
+                      title: const Text('Jaringan Bank Sampah & Pengepul', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Lihat kapasitas gudang dan kontak mitra lain di Ternate', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const MitraPengepulView()),
                         );
                       },
                     ),
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.support_agent, color: Colors.black87),
-                      title: const Text('Bantuan & CS Operasional Kurir', style: TextStyle(fontSize: 13)),
+                      title: const Text('Bantuan & CS Operasional Mitra', style: TextStyle(fontSize: 13)),
                       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
                       onTap: _showCSDialog,
                     ),

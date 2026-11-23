@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'mitra_navigasi_view.dart';
+import 'mitra_pengepul_view.dart';
 import '../../../api_service.dart';
 import '../../../app_data.dart';
 
@@ -15,64 +16,8 @@ class _MitraTugasViewState extends State<MitraTugasView> {
   bool isOnline = true;
   bool _isLoading = false;
 
-  List<Map<String, dynamic>> orderMasuk = [
-    {
-      'id': 'REG-8902',
-      'nama': 'Ibu Salma Latif',
-      'jenis': 'Kardus Box & Botol PET Bening',
-      'berat': '~18.5 kg',
-      'jarak': '1.2 km (4 mnt)',
-      'alamat': 'Jl. Cengkeh No. 14, Gamalama (Dekat Pasar...)',
-      'rute': 'Rute tercepat via Jl. Ahmad Yani',
-      'prioritas': 'Prioritas Baru',
-      'prioritasColor': Color(0xFFE8F5E9),
-      'prioritasTextColor': Color(0xFF2E7D32),
-      'estimasiItem': [
-        {'nama': 'Kardus Box', 'berat': '~15 kg', 'catatan': 'Tersortir Rapi', 'icon': Icons.inventory_2_outlined},
-        {'nama': 'PET Bening', 'berat': '~4 kg', 'catatan': 'Bersih & Pipih', 'icon': Icons.local_drink_outlined},
-      ],
-      'catatanKhusus': 'Kardus sudah diikat tali rafia di teras depan samping garasi, botol plastik bersih tanpa tutup dalam karung terpisah.',
-      'patokan': 'Depan Musholla Al-Muhajirin, pagar hitam',
-      'telepon': '081245966332',
-    },
-    {
-      'id': 'REG-8903',
-      'nama': 'Pak Ruslan Taher',
-      'jenis': 'Kaleng Aluminium & Besi Tipis',
-      'berat': '~34.0 kg',
-      'jarak': '2.8 km (9 mnt)',
-      'alamat': 'Kompleks Bastiong Permai Blok C2',
-      'rute': 'Rute via Jl. Raya Bastiong',
-      'prioritas': '5 Menit Lalu',
-      'prioritasColor': Color(0xFFFFF3E0),
-      'prioritasTextColor': Color(0xFFE65100),
-      'estimasiItem': [
-        {'nama': 'Kaleng Aluminium', 'berat': '~20 kg', 'catatan': 'Dibersihkan', 'icon': Icons.science_outlined},
-        {'nama': 'Besi Tipis', 'berat': '~14 kg', 'catatan': 'Terpisah', 'icon': Icons.hardware_outlined},
-      ],
-      'catatanKhusus': 'Barang sudah ditumpuk dekat gerbang utama komplek, siap angkut.',
-      'patokan': 'Blok C2 No. 15, pagar hijau',
-      'telepon': '081234567890',
-    },
-    {
-      'id': 'REG-8904',
-      'nama': 'Siti Rahma',
-      'jenis': 'Minyak Jelantah (UCO Jeriken)',
-      'berat': '~10 L (9 kg)',
-      'jarak': '3.4 km',
-      'alamat': 'Jl. Revolusi, Kalumata',
-      'rute': 'Rute via Jl. Pantai Kalumata',
-      'prioritas': 'Limbah Cair',
-      'prioritasColor': Color(0xFFE0F2F1),
-      'prioritasTextColor': Color(0xFF00796B),
-      'estimasiItem': [
-        {'nama': 'Minyak Jelantah (UCO)', 'berat': '~10 L', 'catatan': 'Dalam 2 Jeriken', 'icon': Icons.water_drop_outlined},
-      ],
-      'catatanKhusus': 'Minyak jelantah sudah disaring, dalam jeriken 5L tertutup rapat.',
-      'patokan': 'Sebelah Toko Berkah Kalumata',
-      'telepon': '082199887766',
-    },
-  ];
+  // Diisi dari server oleh _fetchMitraDashboard() — tidak ada lagi order contoh.
+  List<Map<String, dynamic>> orderMasuk = [];
 
   @override
   void initState() {
@@ -84,6 +29,70 @@ class _MitraTugasViewState extends State<MitraTugasView> {
   Future<void> _fetchMitraDashboard() async {
     setState(() => _isLoading = true);
     await ApiService.getMitraDashboard();
+
+    // Ambil order penjemputan aktif dari backend
+    try {
+      final rawOrders = await ApiService.getPenjemputanOrNull();
+      if (rawOrders != null && mounted) {
+        final List<Map<String, dynamic>> realOrders = [];
+        for (var p in rawOrders) {
+          final status = p['status']?.toString().toUpperCase() ?? 'DIAJUKAN';
+          // Abaikan yang sudah selesai/dibatalkan, dan yang sudah ditimbang (menunggu dibayar mitra)
+          if (status == 'SELESAI' || status == 'DIBATALKAN' || status == 'DIJEMPUT') continue;
+
+          final user = p['user'] is Map ? p['user'] as Map<String, dynamic> : {};
+          final details = p['details'] is List ? p['details'] as List : [];
+
+          double totalKg = 0;
+          final List<Map<String, dynamic>> estimasiItem = [];
+          final List<String> itemNames = [];
+          for (var d in details) {
+            final js = d['jenis_sampah'] is Map ? d['jenis_sampah'] as Map<String, dynamic> : {};
+            final namaJs = js['nama']?.toString() ?? 'Sampah Terpilah';
+            final beratEst = (d['berat_estimasi'] as num?)?.toDouble() ?? 5.0;
+            totalKg += beratEst;
+            itemNames.add(namaJs);
+            estimasiItem.add({
+              'nama': namaJs,
+              'berat': '~${beratEst.toStringAsFixed(1)} kg',
+              'catatan': 'Siap angkut',
+              'icon': Icons.recycling_outlined,
+            });
+          }
+
+          realOrders.add({
+            'id': 'REG-${p['id']}',
+            'backendId': p['id'],
+            'nama': user['nama']?.toString() ?? 'Nasabah REGREEN',
+            'jenis': itemNames.isNotEmpty ? itemNames.join(' & ') : 'Sampah Terpilah',
+            'berat': totalKg > 0 ? '~${totalKg.toStringAsFixed(1)} kg' : '~10.0 kg',
+            'jarak': '1.2 km (4 mnt)',
+            'alamat': p['lokasi']?.toString() ?? 'Kota Ternate',
+            'rute': 'Rute tercepat via pusat kota',
+            'prioritas': status == 'DIAJUKAN' ? 'Order Masuk Baru' : status,
+            'prioritasColor': const Color(0xFFE8F5E9),
+            'prioritasTextColor': primaryGreen,
+            'estimasiItem': estimasiItem.isNotEmpty
+                ? estimasiItem
+                : [
+                    {'nama': 'Kardus & Botol', 'berat': '~10 kg', 'catatan': 'Tersortir Rapi', 'icon': Icons.inventory_2_outlined},
+                  ],
+            'catatanKhusus': p['catatan']?.toString() ?? 'Sampah sudah siap dijemput di lokasi.',
+            'patokan': p['lokasi']?.toString() ?? 'Dekat lokasi jemput',
+            'telepon': user['no_hp']?.toString() ?? '081245966332',
+          });
+        }
+
+        if (mounted) {
+          setState(() {
+            orderMasuk = realOrders;
+          });
+        }
+      }
+    } catch (e) {
+      print('DEBUG FETCH LIVE ORDERS ERROR: $e');
+    }
+
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -126,6 +135,15 @@ class _MitraTugasViewState extends State<MitraTugasView> {
     setState(() {
       orderMasuk.removeAt(index);
     });
+
+    // Update status di backend menjadi DITERIMA
+    if (order['backendId'] != null) {
+      // Kurir memulai tugas yang sudah ditugaskan mitra; mitra yang menangani sendiri menerima order baru.
+      ApiService.updateStatusPenjemputan(
+        order['backendId'],
+        AppData.role == 'kurir' ? 'DALAM PROSES' : 'DITERIMA',
+      );
+    }
 
     Navigator.push(
       context,
@@ -1049,6 +1067,70 @@ class _MitraTugasViewState extends State<MitraTugasView> {
                       ],
                     ),
                   ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // 2b. SHORTCUT TITIK PENGEPUL & BANK SAMPAH MITRA
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MitraPengepulView(),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFC8E6C9)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.storefront, color: primaryGreen, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Titik Pengepul & Bank Sampah Mitra',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Lihat kapasitas gudang & setor muatan kargo di Ternate',
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 14, color: primaryGreen),
+                    ],
+                  ),
                 ),
               ),
 

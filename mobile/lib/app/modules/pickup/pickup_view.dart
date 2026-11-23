@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../mitra/pemilik_data.dart';
 import '../../../api_service.dart';
 import '../../../app_data.dart';
 
@@ -6,6 +7,7 @@ const _bg = Color(0xFFF7F8FF);
 const _dark = Color(0xFF1B5E20);
 const _green = Color(0xFF2E7D32);
 const _mint = Color(0xFF8CEB8C);
+const _mintSoft = Color(0xFFCFF5CF);
 const _blueSoft = Color(0xFFDCE4FA);
 const _blueIcon = Color(0xFF3B4A6B);
 const _lavender = Color(0xFFE6EBFA);
@@ -177,23 +179,50 @@ class _PickupViewState extends State<PickupView> {
     Navigator.of(context, rootNavigator: true).pop();
 
     if (result['success'] == true) {
+      // Permintaan tersimpan di database; mitra memuatnya dari server (tidak perlu disalin lokal).
+
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Row(
             children: [
               Icon(Icons.check_circle, color: _green),
               SizedBox(width: 8),
-              Text('Pengajuan Terkirim'),
+              Text('Pengajuan Diterima Mitra!'),
             ],
           ),
-          content: Text(
-            '${k.nama} • $_berat kg\n'
-            'Estimasi ${_rp(_estimasi)}\n'
-            '${_namaHari[d.weekday - 1]}, ${d.day} ${_namaBulan[d.month - 1]} • '
-            '${_sesiList[_sesi].label}\n'
-            'Jl. Revolusi No. 42, Kalumata, Ternate'
-            '${catatan.isEmpty ? '' : '\nCatatan: $catatan'}',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${k.nama} • $_berat kg\n'
+                'Estimasi ${_rp(_estimasi)}\n'
+                '${_namaHari[d.weekday - 1]}, ${d.day} ${_namaBulan[d.month - 1]} • '
+                '${_sesiList[_sesi].label}\n'
+                'Jl. Revolusi No. 42, Kalumata, Ternate'
+                '${catatan.isEmpty ? '' : '\nCatatan: $catatan'}',
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: _mintSoft, borderRadius: BorderRadius.circular(10)),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: _dark),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Permintaan diterima oleh Mitra Bank Sampah. Mitra akan menugaskan kurir armada untuk menimbang di lokasi Anda.',
+                        style: TextStyle(fontSize: 11, color: _dark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(

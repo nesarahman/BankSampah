@@ -21,6 +21,13 @@ class Penjemputan extends Model
         'total_berat',
         'total_harga',
         'catatan',
+        'rating',
+        'ulasan',
+        'dibayar_at',
+    ];
+
+    protected $casts = [
+        'dibayar_at' => 'datetime',
     ];
 
     // Relasi ke User (Nasabah)

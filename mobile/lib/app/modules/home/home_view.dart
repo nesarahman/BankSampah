@@ -335,25 +335,6 @@ class _Header extends StatelessWidget {
           ],
         ),
         const Spacer(),
-        IconButton(
-          tooltip: 'Mode Mitra Kurir (Armada)',
-          icon: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.two_wheeler, color: _green, size: 20),
-          ),
-          onPressed: () {
-            AppData.role = 'kurir';
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const MitraNavigationView()),
-            );
-          },
-        ),
-        const SizedBox(width: 4),
         const Icon(Icons.notifications_none, color: _ink, size: 26),
         const SizedBox(width: 12),
         GestureDetector(

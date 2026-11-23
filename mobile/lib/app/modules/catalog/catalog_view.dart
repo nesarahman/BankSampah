@@ -1,72 +1,148 @@
 import 'package:flutter/material.dart';
 
-class CatalogView extends StatelessWidget {
+class CatalogView extends StatefulWidget {
   const CatalogView({super.key});
 
   @override
+  State<CatalogView> createState() => _CatalogViewState();
+}
+
+class _CatalogViewState extends State<CatalogView> {
+  String _selectedCategory = 'Semua';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<Map<String, dynamic>> _catalogItems = [
+    {
+      'icon': Icons.delete_outline,
+      'title': 'Kertas & Karton',
+      'category': 'Kertas',
+      'subtitle': 'Kardus, HVS, Koran, Majalah',
+      'image': 'design/kertas.jpg',
+      'imageLabel': 'Kondisi Kering & Rapi',
+      'chips': [
+        'Kardus Cokelat Tebal',
+        'Kertas HVS Putih',
+        'Koran & Majalah',
+      ],
+      'description':
+          'Kardus bersih, kering, tidak terkena minyak atau air. Dilak rapi untuk mempermudah penimbangan...',
+      'price': 'Rp 2.500 - Rp 3.800',
+      'unit': '/kg',
+      'tag': 'Kertas',
+      'tagColor': Colors.green,
+    },
+    {
+      'icon': Icons.local_drink,
+      'title': 'Plastik Daur Ulang',
+      'category': 'Plastik',
+      'subtitle': 'PET, PP Cup, HDPE Jerigen',
+      'image': 'design/plastik.jpg',
+      'imageLabel': 'Harga Tertinggi',
+      'chips': [
+        'Botol Bersih (PET)',
+        'Gelas Cup (PP)',
+        'Jerigen & Tutup (HDPE)',
+      ],
+      'description':
+          'Plastik bening dan berwarna dalam kondisi bersih, kosong tanpa sisa cairan, tutup telah dipisahkan...',
+      'price': 'Rp 4.000 - Rp 7.500',
+      'unit': '/kg',
+      'tag': 'Plastik',
+      'tagColor': Colors.green,
+    },
+    {
+      'icon': Icons.science_outlined,
+      'title': 'Logam & Gelas',
+      'category': 'Logam',
+      'subtitle': 'Aluminium, Besi Scrap, Botol Kaca',
+      'image': 'design/logam.jpg',
+      'imageLabel': 'Nilai Tertinggi: Aluminium',
+      'chips': ['Kaleng Aluminium', 'Besi Scrap', 'Botol Kaca Utuh'],
+      'description':
+          'Logam utuh tanpa campuran tanah atau karat berat. Botol kaca harus utuh tidak pecah agar...',
+      'price': 'Rp 5.000 - Rp 14.000',
+      'unit': '/kg',
+      'tag': 'Logam/Gelas',
+      'tagColor': Colors.green,
+    },
+    {
+      'icon': Icons.eco_outlined,
+      'title': 'Organik & Minyak Jelantah',
+      'category': 'Minyak/Organik',
+      'subtitle': 'UCO (Used Cooking Oil), Kompos Daun',
+      'image': 'design/jelantah.jpg',
+      'imageLabel': 'Tersaring Bersih',
+      'chips': ['Minyak Jelantah (UCO)', 'Kompos Daun & Sayur'],
+      'description':
+          'Minyak goreng bekas dalam jerigen/botol tertutup rapat dan telah disaring tanpa endapan...',
+      'price': 'Rp 6.500',
+      'unit': '/Liter',
+      'tag': 'Organik & Lainnya',
+      'tagColor': Colors.green,
+    },
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filteredItems {
+    return _catalogItems.where((item) {
+      // 1. Filter Kategori
+      bool matchesCategory = true;
+      if (_selectedCategory == 'Kertas') {
+        matchesCategory = item['category'] == 'Kertas' ||
+            item['tag'].toString().toLowerCase().contains('kertas') ||
+            item['title'].toString().toLowerCase().contains('kertas');
+      } else if (_selectedCategory == 'Plastik') {
+        matchesCategory = item['category'] == 'Plastik' ||
+            item['tag'].toString().toLowerCase().contains('plastik') ||
+            item['title'].toString().toLowerCase().contains('plastik');
+      } else if (_selectedCategory == 'Logam') {
+        matchesCategory = item['category'] == 'Logam' ||
+            item['tag'].toString().toLowerCase().contains('logam') ||
+            item['title'].toString().toLowerCase().contains('logam');
+      } else if (_selectedCategory == 'Minyak/Organik') {
+        matchesCategory = item['category'] == 'Minyak/Organik' ||
+            item['tag'].toString().toLowerCase().contains('organik') ||
+            item['title'].toString().toLowerCase().contains('jelantah');
+      }
+
+      // 2. Filter Pencarian
+      bool matchesSearch = true;
+      if (_searchQuery.trim().isNotEmpty) {
+        final query = _searchQuery.trim().toLowerCase();
+        final title = item['title'].toString().toLowerCase();
+        final subtitle = item['subtitle'].toString().toLowerCase();
+        final desc = item['description'].toString().toLowerCase();
+        final chips = (item['chips'] as List<dynamic>? ?? [])
+            .join(' ')
+            .toLowerCase();
+        final tag = item['tag'].toString().toLowerCase();
+
+        matchesSearch = title.contains(query) ||
+            subtitle.contains(query) ||
+            desc.contains(query) ||
+            chips.contains(query) ||
+            tag.contains(query);
+      }
+
+      return matchesCategory && matchesSearch;
+    }).toList();
+  }
+
+  void _onCategoryTap(String category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> catalogItems = [
-      {
-        'icon': Icons.delete_outline,
-        'title': 'Kertas & Karton',
-        'subtitle': 'Kardus, HVS, Koran, Majalah',
-        'image': 'design/kertas.jpg',
-        'imageLabel': 'Kondisi Kering & Rapi',
-        'chips': [
-          'Kardus Cokelat Tebal',
-          'Kertas HVS Putih',
-          'Koran & Majalah',
-        ],
-        'description': 'Kardus bersih, kering, tidak terkena minyak atau air. Dilak rapi untuk mempermudah penimbangan...',
-        'price': 'Rp 2.500 - Rp 3.800',
-        'unit': '/kg',
-        'tag': 'Kertas',
-        'tagColor': Colors.green,
-      },
-      {
-        'icon': Icons.local_drink,
-        'title': 'Plastik Daur Ulang',
-        'subtitle': 'PET, PP Cup, HDPE Jernigen',
-        'image': 'design/plastik.jpg',
-        'imageLabel': 'Harga Tertinggi',
-        'chips': [
-          'Botol Bersih (PET)',
-          'Gelas Cup (PP)',
-          'Jerigen & Tutup (HDPE)',
-        ],
-        'description': 'Plastik bening dan berwarna dalam kondisi bersih, kosong tanpa sisa cairan, tutup telah dipisahkan...',
-        'price': 'Rp 4.000 - Rp 7.500',
-        'unit': '/kg',
-        'tag': 'Plastik',
-        'tagColor': Colors.green,
-      },
-      {
-        'icon': Icons.science_outlined,
-        'title': 'Logam & Gelas',
-        'subtitle': 'Aluminium, Besi Scrap, Botol Kaca',
-        'image': 'design/logam.jpg',
-        'imageLabel': 'Nilai Tertinggi: Aluminium',
-        'chips': ['Kaleng Aluminium', 'Besi Scrap', 'Botol Kaca Utuh'],
-        'description': 'Logam utuh tanpa campuran tanah atau karat berat. Botol kaca harus utuh tidak pecah agar...',
-        'price': 'Rp 5.000 - Rp 14.000',
-        'unit': '/kg',
-        'tag': 'Logam/Gelas',
-        'tagColor': Colors.green,
-      },
-      {
-        'icon': Icons.eco_outlined,
-        'title': 'Organik & Minyak Jelantah',
-        'subtitle': 'UCO (Used Cooking Oil), Kompos Daun',
-        'image': 'design/jelantah.jpg',
-        'imageLabel': 'Tersaring Bersih',
-        'chips': ['Minyak Jelantah (UCO)', 'Kompos Daun & Sayur'],
-        'description': 'Minyak goreng bekas dalam jerigen/botol tertutup rapat dan telah disaring tanpa endapan...',
-        'price': 'Rp 6.500',
-        'unit': '/Liter',
-        'tag': 'Organik & Lainnya',
-        'tagColor': Colors.green,
-      },
-    ];
+    final filtered = _filteredItems;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -100,8 +176,8 @@ class CatalogView extends StatelessWidget {
             padding: EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               backgroundColor: Color(0xFFE0E0E0),
-              child: Icon(Icons.person, color: Colors.green, size: 18),
               radius: 16,
+              child: Icon(Icons.person, color: Colors.green, size: 18),
             ),
           ),
         ],
@@ -164,47 +240,91 @@ class CatalogView extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
+                            controller: _searchController,
+                            onChanged: (val) {
+                              setState(() {
+                                _searchQuery = val;
+                              });
+                            },
                             decoration: InputDecoration(
-                              hintText: 'Cari jenis sampah, cth: botol PET, kardus...',
+                              hintText:
+                                  'Cari jenis sampah, cth: botol PET, kardus...',
                               hintStyle: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[500],
                               ),
                               border: InputBorder.none,
+                              isDense: true,
                             ),
                           ),
                         ),
+                        if (_searchQuery.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            color: Colors.grey[600],
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              setState(() {
+                                _searchController.clear();
+                                _searchQuery = '';
+                              });
+                            },
+                          ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Filter Chips
-                  Row(
-                    children: [
-                      _buildFilterChip(
-                        'Semua',
-                        isSelected: true,
-                        icon: Icons.grid_view,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(
-                        'Kertas',
-                        icon: Icons.description_outlined,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Plastik', icon: Icons.local_drink),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Logam', icon: Icons.science_outlined),
-                    ],
+                  // Filter Chips (Bisa Diklik & Responsif)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip(
+                          'Semua',
+                          isSelected: _selectedCategory == 'Semua',
+                          icon: Icons.grid_view,
+                          onTap: () => _onCategoryTap('Semua'),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterChip(
+                          'Kertas',
+                          isSelected: _selectedCategory == 'Kertas',
+                          icon: Icons.description_outlined,
+                          onTap: () => _onCategoryTap('Kertas'),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterChip(
+                          'Plastik',
+                          isSelected: _selectedCategory == 'Plastik',
+                          icon: Icons.local_drink,
+                          onTap: () => _onCategoryTap('Plastik'),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterChip(
+                          'Logam',
+                          isSelected: _selectedCategory == 'Logam',
+                          icon: Icons.science_outlined,
+                          onTap: () => _onCategoryTap('Logam'),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterChip(
+                          'Minyak Jelantah',
+                          isSelected: _selectedCategory == 'Minyak/Organik',
+                          icon: Icons.eco_outlined,
+                          onTap: () => _onCategoryTap('Minyak/Organik'),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
 
-                  // Info Text
+                  // Info Text Dinamis
                   Row(
                     children: [
                       Text(
-                        'MENAMPILKAN 4 KATEGORI TERPILIH',
+                        'MENAMPILKAN ${filtered.length} KATEGORI TERPILIH',
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.green[800],
@@ -224,14 +344,74 @@ class CatalogView extends StatelessWidget {
               ),
             ),
 
-            // Catalog Cards
+            // Catalog Cards / Empty State
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                children: catalogItems
-                    .map((item) => _buildCatalogCard(item))
-                    .toList(),
-              ),
+              child: filtered.isEmpty
+                  ? Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 36,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 52,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Tidak ada jenis sampah yang cocok',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Coba kata kunci lain atau pilih kategori "Semua"',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2E7D32),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _selectedCategory = 'Semua';
+                                _searchQuery = '';
+                                _searchController.clear();
+                              });
+                            },
+                            child: const Text('Reset Filter'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Column(
+                      children: filtered
+                          .map((item) => _buildCatalogCard(item))
+                          .toList(),
+                    ),
             ),
 
             // Tips Card
@@ -281,44 +461,58 @@ class CatalogView extends StatelessWidget {
           ],
         ),
       ),
-      // ✅ TIDAK ADA bottomNavigationBar DI SINI
-      // Karena sudah ada di MainNavigationView
     );
   }
 
   Widget _buildFilterChip(
     String label, {
-    bool isSelected = false,
+    required bool isSelected,
+    required VoidCallback onTap,
     IconData? icon,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF2E7D32) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null)
-            Icon(
-              icon,
-              size: 14,
-              color: isSelected ? Colors.white : Colors.grey[700],
-            ),
-          if (icon != null) const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.grey[700],
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2E7D32) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+            width: isSelected ? 1.5 : 1.0,
           ),
-        ],
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2E7D32).withValues(alpha: 0.25),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null)
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Colors.white : Colors.grey[700],
+              ),
+            if (icon != null) const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[700],
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -331,7 +525,7 @@ class CatalogView extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),

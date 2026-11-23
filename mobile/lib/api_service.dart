@@ -627,6 +627,201 @@ class ApiService {
     }
   }
 
+  // 12b. UPDATE STATUS PENJEMPUTAN (DITERIMA, DIJEMPUT, DLL)
+  static Future<Map<String, dynamic>> updateStatusPenjemputan(
+    dynamic id,
+    String status,
+  ) async {
+    final cleanId = id.toString().replaceAll('REG-', '');
+    final url = Uri.parse('${AppData.baseUrl}/penjemputan/$cleanId/status');
+    try {
+      final response = await http.put(
+        url,
+        headers: {
+          if (AppData.token.isNotEmpty) 'Authorization': 'Bearer ${AppData.token}',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'status': status}),
+      );
+      print('DEBUG UPDATE STATUS PENJEMPUTAN: ${response.statusCode} - ${response.body}');
+      final data = jsonDecode(response.body);
+      return {'success': response.statusCode == 200, 'data': data};
+    } catch (e) {
+      print('DEBUG UPDATE STATUS ERROR: $e');
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  // 12c. MITRA MENUGASKAN PENJEMPUTAN KE KURIR
+  static Future<Map<String, dynamic>> tugaskanKurir({
+    required dynamic id,
+    dynamic kurirId,
+    String? catatan,
+  }) async {
+    final cleanId = id.toString().replaceAll('REG-', '');
+    final url = Uri.parse('${AppData.baseUrl}/penjemputan/$cleanId/tugaskan-kurir');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          if (AppData.token.isNotEmpty) 'Authorization': 'Bearer ${AppData.token}',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'kurir_id': kurirId,
+          if (catatan != null) 'catatan': catatan,
+        }),
+      );
+      print('DEBUG TUGASKAN KURIR: ${response.statusCode} - ${response.body}');
+      final data = jsonDecode(response.body);
+      return {'success': response.statusCode == 200, 'data': data};
+    } catch (e) {
+      print('DEBUG TUGASKAN KURIR ERROR: $e');
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  // 12d. KURIR MELAPORKAN HASIL TIMBANGAN KE MITRA (KURIR TIDAK MEMBAYAR)
+  static Future<Map<String, dynamic>> laporTimbanganKurir({
+    required dynamic id,
+    required double totalBerat,
+    required double totalHarga,
+    List<Map<String, dynamic>>? items,
+  }) async {
+    final cleanId = id.toString().replaceAll('REG-', '');
+    final url = Uri.parse('${AppData.baseUrl}/penjemputan/$cleanId/lapor-timbangan');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          if (AppData.token.isNotEmpty) 'Authorization': 'Bearer ${AppData.token}',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'total_berat': totalBerat,
+          'total_harga': totalHarga,
+          if (items != null) 'items': items,
+        }),
+      );
+      print('DEBUG LAPOR TIMBANGAN: ${response.statusCode} - ${response.body}');
+      final data = jsonDecode(response.body);
+      return {'success': response.statusCode == 200, 'data': data};
+    } catch (e) {
+      print('DEBUG LAPOR TIMBANGAN ERROR: $e');
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  // 12e. NASABAH MEMBERI PENILAIAN KURIR (KURIR DAPAT POIN KINERJA)
+  static Future<Map<String, dynamic>> beriPenilaianKurir({
+    required dynamic id,
+    required double rating,
+    String? ulasan,
+    List<String>? tags,
+  }) async {
+    final cleanId = id.toString().replaceAll('REG-', '');
+    final url = Uri.parse('${AppData.baseUrl}/penjemputan/$cleanId/beri-penilaian');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          if (AppData.token.isNotEmpty) 'Authorization': 'Bearer ${AppData.token}',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'rating': rating,
+          if (ulasan != null) 'ulasan': ulasan,
+          if (tags != null) 'tags': tags,
+        }),
+      );
+      print('DEBUG BERI PENILAIAN KURIR: ${response.statusCode} - ${response.body}');
+      final data = jsonDecode(response.body);
+      return {'success': response.statusCode == 200, 'data': data};
+    } catch (e) {
+      print('DEBUG BERI PENILAIAN ERROR: $e');
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  // 12f. MITRA MEMBAYAR GAJI KURIR
+  static Future<Map<String, dynamic>> bayarGajiKurir({
+    required dynamic kurirId,
+    required double nominal,
+    String? periode,
+  }) async {
+    final url = Uri.parse('${AppData.baseUrl}/mitra/bayar-gaji-kurir');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          if (AppData.token.isNotEmpty) 'Authorization': 'Bearer ${AppData.token}',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'kurir_id': kurirId,
+          'nominal': nominal,
+          'periode': periode ?? 'Mingguan',
+        }),
+      );
+      print('DEBUG BAYAR GAJI KURIR: ${response.statusCode} - ${response.body}');
+      final data = jsonDecode(response.body);
+      return {'success': response.statusCode == 200, 'data': data};
+    } catch (e) {
+      print('DEBUG BAYAR GAJI KURIR ERROR: $e');
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  // 12g. SEMUA PENJEMPUTAN MILIK ROLE PEMANGGIL (null = gagal memuat, [] = memang kosong)
+  //      nasabah: miliknya | kurir: yang ditugaskan | mitra/admin: semua
+  static Future<List<Map<String, dynamic>>?> getPenjemputanOrNull() async {
+    final url = Uri.parse('${AppData.baseUrl}/penjemputan');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          if (AppData.token.isNotEmpty) 'Authorization': 'Bearer ${AppData.token}',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final list = data['data'] ?? data;
+        if (list is List) return List<Map<String, dynamic>>.from(list);
+      }
+    } catch (e) {
+      print('DEBUG GET PENJEMPUTAN ERROR: $e');
+    }
+    return null;
+  }
+
+  // 12h. DAFTAR KURIR + PERFORMA + GAJI (layar mitra)
+  static Future<List<Map<String, dynamic>>> getDaftarKurir() async {
+    final url = Uri.parse('${AppData.baseUrl}/mitra/kurir');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          if (AppData.token.isNotEmpty) 'Authorization': 'Bearer ${AppData.token}',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final list = data['data'];
+        if (list is List) return List<Map<String, dynamic>>.from(list);
+      }
+    } catch (e) {
+      print('DEBUG GET DAFTAR KURIR ERROR: $e');
+    }
+    return [];
+  }
+
   // 13. DASHBOARD KHUSUS MITRA KURIR
   static Future<Map<String, dynamic>> getMitraDashboard() async {
     final url = Uri.parse('${AppData.baseUrl}/mitra/dashboard');
@@ -722,6 +917,89 @@ class ApiService {
     } catch (e) {
       print('DEBUG TARIK SALDO MITRA ERROR: $e');
       return {'success': false, 'message': 'Koneksi backend gagal: $e'};
+    }
+  }
+
+  // ==========================================
+  // ADMIN API ENDPOINTS
+  // ==========================================
+  static Future<Map<String, dynamic>> getAdminDashboard() async {
+    final url = Uri.parse('${AppData.baseUrl}/admin/dashboard');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer ${AppData.token}',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return {'success': true, 'data': body['data']};
+      }
+      return {'success': false, 'message': 'Gagal mengambil data dashboard admin'};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminSampah() async {
+    final url = Uri.parse('${AppData.baseUrl}/admin/sampah');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer ${AppData.token}',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return {'success': true, 'data': body['data']};
+      }
+      return {'success': false, 'message': 'Gagal mengambil katalog harga'};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminPenarikan() async {
+    final url = Uri.parse('${AppData.baseUrl}/admin/penarikan');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer ${AppData.token}',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return {'success': true, 'data': body['data']};
+      }
+      return {'success': false, 'message': 'Gagal mengambil antrean penarikan'};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminUsers() async {
+    final url = Uri.parse('${AppData.baseUrl}/admin/users');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer ${AppData.token}',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return {'success': true, 'data': body['data']};
+      }
+      return {'success': false, 'message': 'Gagal mengambil data user'};
+    } catch (e) {
+      return {'success': false, 'message': '$e'};
     }
   }
 }

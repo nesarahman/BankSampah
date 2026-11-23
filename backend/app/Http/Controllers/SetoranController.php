@@ -16,10 +16,12 @@ class SetoranController extends Controller
 {
     use ApiResponse;
 
-    // 1. CATAT SETORAN BARU
+    // 1. CATAT SETORAN BARU — setoran langsung di drop point, dicatat OLEH MITRA/ADMIN untuk seorang nasabah.
+    //    (Nasabah tidak boleh mengisi sendiri berat & saldo; itu celah pengisian saldo.)
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
             'drop_point_id' => 'required|exists:drop_points,id',
             'jenis_sampah_id' => 'required|exists:jenis_sampahs,id',
             'berat' => 'required|numeric|min:0.1',
@@ -29,7 +31,10 @@ class SetoranController extends Controller
             return $this->errorResponse('Validasi gagal', 422, $validator->errors());
         }
 
-        $user = $request->user();
+        $user = \App\Models\User::where('id', $request->user_id)->where('role', 'nasabah')->first();
+        if (!$user) {
+            return $this->errorResponse('Nasabah tidak ditemukan', 404);
+        }
 
         try {
             $setoran = DB::transaction(function () use ($request, $user) {
@@ -72,7 +77,7 @@ class SetoranController extends Controller
                     'aktivitas' => 'Setor Sampah',
                     'referensi_type' => 'setoran',
                     'referensi_id' => $setoran->id,
-                    'deskripsi' => "Menyetor {$jenisSampah->nama} seberat {$berat}kg ke {$request->drop_point_id}",
+                    'deskripsi' => "Menyetor {$jenisSampah->nama} seberat {$berat}kg ke " . (DropPoint::find($request->drop_point_id)->nama ?? 'drop point'),
                 ]);
 
                 return $setoran->load(['jenisSampah', 'dropPoint']);

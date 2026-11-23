@@ -9,6 +9,7 @@ import 'app/modules/history/history_view.dart';
 import 'app/modules/drop_point/drop_point_view.dart';
 import 'app/modules/profile/profile_view.dart';
 import 'app/modules/mitra/mitra_navigation_view.dart';
+import 'app/modules/mitra/kurir_navigation_view.dart';
 import 'app_data.dart';
 
 // 2. STATEFULWIDGET: Kita gunakan StatefulWidget karena halaman ini perlu
@@ -36,9 +37,8 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
   @override
   Widget build(BuildContext context) {
-    if (AppData.role == 'kurir' || AppData.role == 'mitra') {
-      return const MitraNavigationView();
-    }
+    if (AppData.role == 'kurir') return const KurirNavigationView();
+    if (AppData.role == 'mitra') return const MitraNavigationView();
     // 5. SCAFFOLD: Kerangka dasar halaman Material Design.
     return Scaffold(
       // 6. BODY DENGAN INDEXEDSTACK (FITUR UNGGULAN):

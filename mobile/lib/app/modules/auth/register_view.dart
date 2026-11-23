@@ -20,24 +20,81 @@ class _RegisterViewState extends State<RegisterView> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _konfirmasiPasswordController = TextEditingController();
 
+  String _selectedRole = 'nasabah'; // 'nasabah' atau 'mitra'
   bool _isLoading = false;
 
   Future<void> _handleRegister() async {
-    // 1. Validasi Input
-    if (_namaController.text.isEmpty ||
-        _usernameController.text.isEmpty ||
-        _noHpController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
+    final nama = _namaController.text.trim();
+    final username = _usernameController.text.trim();
+    final noHp = _noHpController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final konfirmasi = _konfirmasiPasswordController.text;
+
+    // 1. Validasi Input Sisi Aplikasi
+    if (nama.isEmpty ||
+        username.isEmpty ||
+        noHp.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        konfirmasi.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua field wajib harus diisi!')),
+        const SnackBar(
+          content: Text('Semua field wajib diisi!'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
-    if (_passwordController.text != _konfirmasiPasswordController.text) {
+    if (username.contains(' ')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kata sandi tidak cocok!')),
+        const SnackBar(
+          content: Text('Username tidak boleh mengandung spasi!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final phoneRegex = RegExp(r'^[0-9]+$');
+    if (!phoneRegex.hasMatch(noHp) || noHp.length < 9 || noHp.length > 15) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nomor HP/WhatsApp harus berupa angka valid (9-15 digit)!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Format email tidak valid!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kata sandi minimal 6 karakter!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (password != konfirmasi) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kata sandi dan konfirmasi kata sandi tidak cocok!'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -48,12 +105,12 @@ class _RegisterViewState extends State<RegisterView> {
 
     // 2. Panggil API Register ke Laravel
     final result = await ApiService.register(
-      nama: _namaController.text.trim(),
-      username: _usernameController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      noHp: _noHpController.text.trim(),
-      role: 'nasabah',
+      nama: nama,
+      username: username,
+      email: email,
+      password: password,
+      noHp: noHp,
+      role: _selectedRole,
     );
 
     if (!mounted) return;
@@ -67,12 +124,16 @@ class _RegisterViewState extends State<RegisterView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result['message'] ?? 'Registrasi berhasil! Silakan login.',
+            result['message'] ?? 'Registrasi berhasil! Silakan masuk.',
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: const Color(0xFF2E7D32),
         ),
       );
-      Navigator.pop(context); // Kembali ke halaman login
+      // Kembalikan role dan email ke halaman Login untuk autofill
+      Navigator.pop(context, {
+        'role': _selectedRole,
+        'email': email,
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -178,7 +239,42 @@ class _RegisterViewState extends State<RegisterView> {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
+              // Pilihan Peran: Nasabah vs Mitra Kurir (TIDAK ADA ADMIN)
+              const Text(
+                'Daftar Sebagai',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildRoleCard(
+                      title: 'Nasabah',
+                      subtitle: '(Warga)',
+                      icon: Icons.person,
+                      isSelected: _selectedRole == 'nasabah',
+                      onTap: () => setState(() => _selectedRole = 'nasabah'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildRoleCard(
+                      title: 'Mitra Pengepul',
+                      subtitle: '(Bank Sampah)',
+                      icon: Icons.storefront,
+                      isSelected: _selectedRole == 'mitra',
+                      onTap: () => setState(() => _selectedRole = 'mitra'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
 
               // Field Nama
               TextField(
@@ -380,6 +476,56 @@ class _RegisterViewState extends State<RegisterView> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    const primaryGreen = Color(0xFF2E7D32);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryGreen.withOpacity(0.08) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? primaryGreen : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? primaryGreen : Colors.grey.shade600,
+              size: 28,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isSelected ? primaryGreen : Colors.grey.shade800,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 11,
+                color: isSelected ? primaryGreen : Colors.grey.shade500,
+              ),
+            ),
+          ],
         ),
       ),
     );

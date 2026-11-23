@@ -280,7 +280,7 @@ class _GoogleAuthSheetState extends State<GoogleAuthSheet> {
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../mitra/pemilik_data.dart';
 import '../../../api_service.dart';
 import '../../../app_data.dart';
 
@@ -32,6 +33,139 @@ class _HistoryViewState extends State<HistoryView> {
       _apiItems = items;
       _isLoading = false;
     });
+  }
+
+  void _showRatingDialog(Map<String, dynamic> item) {
+    int rating = 5;
+    final List<String> tags = ['Tepat Waktu', 'Ramah & Sopan', 'Timbangan Akurat', 'Cepat Tanggap'];
+    final Set<String> selectedTags = {'Tepat Waktu', 'Ramah & Sopan'};
+    final ulasanC = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: const Color(0xFFFFF3E0), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.star, color: Colors.amber, size: 24),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text('Nilai Pelayanan Kurir', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Penilaian Anda akan menjadi poin kinerja & reward langsung bagi kurir armada!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (i) {
+                    final isFilled = i < rating;
+                    return IconButton(
+                      icon: Icon(
+                        isFilled ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 32,
+                      ),
+                      onPressed: () => setS(() => rating = i + 1),
+                    );
+                  }),
+                ),
+                Text(
+                  rating == 5
+                      ? 'Luar Biasa (+50 Poin Kurir)'
+                      : rating == 4
+                          ? 'Sangat Baik (+40 Poin Kurir)'
+                          : rating == 3
+                              ? 'Cukup (+30 Poin Kurir)'
+                              : 'Perlu Ditingkatkan',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2E7D32)),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: tags.map((t) {
+                    final sel = selectedTags.contains(t);
+                    return FilterChip(
+                      label: Text(t, style: TextStyle(fontSize: 11, color: sel ? Colors.white : Colors.black87)),
+                      selected: sel,
+                      selectedColor: const Color(0xFF2E7D32),
+                      backgroundColor: Colors.grey.shade100,
+                      onSelected: (val) {
+                        setS(() {
+                          if (val) {
+                            selectedTags.add(t);
+                          } else {
+                            selectedTags.remove(t);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: ulasanC,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: 'Tulis apresiasi atau saran untuk kurir...',
+                    hintStyle: const TextStyle(fontSize: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Nanti')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2E7D32),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final hasil = await ApiService.beriPenilaianKurir(
+                  id: item['id'],
+                  rating: rating.toDouble(),
+                  ulasan: ulasanC.text.trim(),
+                  tags: selectedTags.toList(),
+                );
+                Navigator.pop(ctx);
+                if (hasil['success'] != true) {
+                  final dd = hasil['data'];
+                  final msg = (dd is Map ? dd['message'] : null) ?? 'Gagal mengirim penilaian';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$msg'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+                  );
+                  return;
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✓ Terima kasih! Penilaian $rating ⭐ berhasil dikirim. Kurir menerima bonus poin kinerja.'),
+                    backgroundColor: const Color(0xFF2E7D32),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: const Text('Kirim Penilaian', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   List<Map<String, dynamic>> _getFormattedItems() {
@@ -413,28 +547,40 @@ class _HistoryViewState extends State<HistoryView> {
                                             ),
                                           ],
                                         ),
-                                        ElevatedButton(
-                                          onPressed: () {},
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: item['isProcess']
-                                                ? Colors.green[800]
-                                                : Colors.grey[200],
-                                            foregroundColor: item['isProcess']
-                                                ? Colors.white
-                                                : Colors.black87,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
+                                        Row(
+                                          children: [
+                                            if (!item['isProcess']) ...[
+                                              ElevatedButton.icon(
+                                                onPressed: () => _showRatingDialog(item),
+                                                icon: const Icon(Icons.star, color: Colors.amber, size: 14),
+                                                label: const Text('Beri Nilai Kurir', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFFFFF3E0),
+                                                  foregroundColor: const Color(0xFFE65100),
+                                                  elevation: 0,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                            ],
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                if (!item['isProcess']) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(content: Text('Struk resmi transaksi berhasil diunduh ke perangkat Anda.')),
+                                                  );
+                                                }
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: item['isProcess'] ? Colors.green[800] : Colors.grey[200],
+                                                foregroundColor: item['isProcess'] ? Colors.white : Colors.black87,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                              ),
+                                              child: Text(item['buttonText'], style: const TextStyle(fontSize: 11)),
                                             ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            item['buttonText'],
-                                            style: const TextStyle(fontSize: 11),
-                                          ),
+                                          ],
                                         ),
                                       ],
                                     ),

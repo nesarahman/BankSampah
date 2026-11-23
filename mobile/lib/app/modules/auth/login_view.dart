@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'register_view.dart';
 import 'google_auth_sheet.dart';
 import '../mitra/mitra_navigation_view.dart';
+import '../mitra/kurir_navigation_view.dart';
+import '../admin/admin_navigation_view.dart';
 import '../../../main_navigation_view.dart';
 import '../../../api_service.dart';
 import '../../../app_data.dart';
@@ -30,16 +32,16 @@ class _LoginViewState extends State<LoginView> {
   final List<Map<String, dynamic>> _roles = [
     {'name': 'Nasabah', 'icon': Icons.person, 'sub': '(Warga)', 'active': true},
     {
-      'name': 'Mitra Kurir',
-      'icon': Icons.delivery_dining,
-      'sub': '(Armada)',
+      'name': 'Mitra Pengepul',
+      'icon': Icons.storefront,
+      'sub': '(Bank Sampah)',
       'active': true,
     },
     {
       'name': 'Admin',
       'icon': Icons.admin_panel_settings,
       'sub': '(Operasional)',
-      'active': false,
+      'active': true, // ← DIUBAH: dari false menjadi true
     },
   ];
 
@@ -74,16 +76,6 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> _handleLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      if (_selectedRole == 'Mitra Kurir') {
-        // Langsung arahkan ke Dashboard Mitra Kurir
-        AppData.role = 'kurir';
-        AppData.namaUser = 'Ahmad Fauzi';
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MitraNavigationView()),
-        );
-        return;
-      }
       _showErrorDialog('Email dan Kata Sandi harus diisi!');
       return;
     }
@@ -106,45 +98,76 @@ class _LoginViewState extends State<LoginView> {
     if (result['success'] == true) {
       _failedAttempts = 0;
 
-      // Jika user memilih peran Mitra Kurir, arahkan ke Dashboard Mitra Kurir
-      if (_selectedRole == 'Mitra Kurir' || AppData.role == 'kurir') {
-        AppData.role = 'kurir';
-        if (AppData.namaUser.isEmpty || AppData.namaUser == 'User') {
-          AppData.namaUser = 'Ahmad Fauzi';
+      // 1. Role Admin: HANYA bisa masuk jika memilih tab Admin
+      if (AppData.role == 'admin') {
+        if (_selectedRole != 'Admin') {
+          AppData.reset();
+          _showErrorDialog(
+            'Akun ini adalah Admin.\nSilakan pilih tab peran Admin untuk masuk.',
+          );
+          return;
         }
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MitraNavigationView()),
+          MaterialPageRoute(builder: (context) => const AdminNavigationView()),
         );
-      } else {
-        AppData.role = 'nasabah';
+        return;
+      }
+
+      // 2. Jika user memilih tab Admin, tapi akunnya bukan admin
+      if (_selectedRole == 'Admin') {
+        AppData.reset();
+        _showErrorDialog('Akun ini bukan akun Admin.');
+        return;
+      }
+
+      // 3. Role Mitra: HANYA bisa masuk jika memilih tab Mitra
+      if (_selectedRole.contains('Mitra')) {
+        if (AppData.role != 'kurir' && AppData.role != 'mitra') {
+          // Akun nasabah mencoba masuk lewat tab Mitra -> TOLAK!
+          AppData.reset();
+          _showErrorDialog(
+            'Akun ini terdaftar sebagai Nasabah, bukan Mitra Pengepul.\nAkun nasabah hanya diperbolehkan masuk melalui tab Nasabah.',
+          );
+          return;
+        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AppData.role == 'kurir'
+                ? const KurirNavigationView()
+                : const MitraNavigationView(),
+          ),
+        );
+        return;
+      }
+
+      // 4. Role Nasabah: HANYA bisa masuk jika memilih tab Nasabah
+      if (_selectedRole == 'Nasabah') {
+        if (AppData.role != 'nasabah') {
+          // Akun kurir/mitra mencoba masuk lewat tab Nasabah -> TOLAK!
+          AppData.reset();
+          _showErrorDialog(
+            'Akun ini terdaftar sebagai Mitra Pengepul, bukan Nasabah.\nSilakan masuk melalui tab Mitra Pengepul.',
+          );
+          return;
+        }
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainNavigationView()),
         );
-      }
-    } else {
-      if (_selectedRole == 'Mitra Kurir') {
-        // Jika login API gagal namun user ingin masuk ke Mitra Kurir, izinkan masuk mode kurir
-        AppData.role = 'kurir';
-        AppData.namaUser = 'Ahmad Fauzi';
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MitraNavigationView()),
-        );
         return;
       }
+    } else {
       _failedAttempts++;
 
-      if (_failedAttempts >= 3) {
+      final errorMsg = result['message'] ?? 'Email, WhatsApp, atau Kata Sandi salah!';
+
+      if (_failedAttempts >= 3 || errorMsg.contains('terkunci')) {
         _startLockTimer();
         _showLockDialog();
       } else {
-        int sisa = 3 - _failedAttempts;
-        _showErrorDialog(
-          result['message'] ??
-              'Email atau Kata Sandi salah!\nSisa percobaan: $sisa',
-        );
+        _showErrorDialog(errorMsg);
       }
     }
   }
@@ -325,11 +348,7 @@ class _LoginViewState extends State<LoginView> {
       context,
       onAccountSelected: (nama, email, avatarUrl) {
         Navigator.pop(context);
-        _processGoogleLogin(
-          nama: nama,
-          email: email,
-          avatarUrl: avatarUrl,
-        );
+        _processGoogleLogin(nama: nama, email: email, avatarUrl: avatarUrl);
       },
     );
   }
@@ -375,6 +394,18 @@ class _LoginViewState extends State<LoginView> {
     Navigator.of(context, rootNavigator: true).pop();
 
     if (result['success'] == true) {
+      // ← DIUBAH: akun admin tidak boleh masuk lewat Google
+      if (AppData.role == 'admin' || _selectedRole == 'Admin') {
+        AppData.reset();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Admin harus masuk dengan email dan kata sandi.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Selamat datang, ${AppData.namaUser}! Berhasil masuk.'),
@@ -383,24 +414,39 @@ class _LoginViewState extends State<LoginView> {
         ),
       );
 
-      if (_selectedRole == 'Mitra Kurir') {
-        AppData.role = 'kurir';
-        if (AppData.namaUser.isEmpty || AppData.namaUser == 'User') {
-          AppData.namaUser = 'Ahmad Fauzi';
+      if (_selectedRole.contains('Mitra')) {
+        if (AppData.role != 'kurir' && AppData.role != 'mitra') {
+          AppData.reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Akun Google ini terdaftar sebagai Nasabah, bukan Mitra Pengepul.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
         }
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const MitraNavigationView(),
+            builder: (context) => AppData.role == 'kurir'
+                ? const KurirNavigationView()
+                : const MitraNavigationView(),
           ),
         );
       } else {
-        AppData.role = 'nasabah';
+        if (AppData.role != 'nasabah') {
+          AppData.reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Akun Google ini terdaftar sebagai Mitra Pengepul, bukan Nasabah.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => const MainNavigationView(),
-          ),
+          MaterialPageRoute(builder: (context) => const MainNavigationView()),
         );
       }
     } else {
@@ -412,8 +458,6 @@ class _LoginViewState extends State<LoginView> {
       );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -567,11 +611,11 @@ class _LoginViewState extends State<LoginView> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _selectedRole == 'Mitra Kurir'
-                            ? 'Masuk sebagai Mitra Kurir Armada untuk menerima order jemputan sampah, navigasi rute nasabah, dan input timbangan digital.'
+                        _selectedRole.contains('Mitra')
+                            ? 'Masuk sebagai Mitra Pengepul untuk mengelola gudang bank sampah, konfirmasi setoran kurir, dan layanan nasabah.'
                             : (_selectedRole == 'Admin'
-                                ? 'Masuk sebagai Admin untuk monitoring operasional bank sampah, rekapitulasi data, dan kelola harga.'
-                                : 'Masuk sebagai Nasabah untuk cek saldo tabungan sampah, request jemput pilahan, dan tukar voucher belanja.'),
+                                  ? 'Masuk sebagai Admin untuk monitoring operasional bank sampah, rekapitulasi data, dan kelola harga.'
+                                  : 'Masuk sebagai Nasabah untuk cek saldo tabungan sampah, request jemput pilahan, dan tukar voucher belanja.'),
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.green.shade900,
@@ -727,9 +771,11 @@ class _LoginViewState extends State<LoginView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _selectedRole == 'Mitra Kurir'
-                                ? 'Masuk ke Dashboard Mitra Kurir'
-                                : 'Masuk ke Aplikasi REGREEN',
+                            _selectedRole.contains('Mitra')
+                                ? 'Masuk ke Dashboard Mitra Pengepul'
+                                : (_selectedRole == 'Admin'
+                                      ? 'Masuk ke Dashboard Admin'
+                                      : 'Masuk ke Aplikasi REGREEN'),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -742,9 +788,11 @@ class _LoginViewState extends State<LoginView> {
               ),
               const SizedBox(height: 8),
               Text(
-                _selectedRole == 'Mitra Kurir'
-                    ? 'Mengarahkan langsung ke Dashboard Tugas Penjemputan Armada'
-                    : 'Mengarahkan langsung ke Beranda Nasabah & Rekening Sampah',
+                _selectedRole.contains('Mitra')
+                    ? 'Mengarahkan langsung ke Dashboard Gudang & Setoran Bank Sampah'
+                    : (_selectedRole == 'Admin'
+                          ? 'Mengarahkan langsung ke Dashboard Admin Operasional'
+                          : 'Mengarahkan langsung ke Beranda Nasabah & Rekening Sampah'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 11, color: Colors.grey),
               ),
@@ -818,13 +866,31 @@ class _LoginViewState extends State<LoginView> {
                 children: [
                   const Text('Belum punya akun?'),
                   TextButton(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final result = await Navigator.push<Map<String, dynamic>>(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const RegisterView(),
                         ),
                       );
+
+                      if (result != null && mounted) {
+                        setState(() {
+                          final regRole = result['role']?.toString();
+                          final regEmail = result['email']?.toString();
+
+                          if (regRole == 'mitra') {
+                            _selectedRole = 'Mitra Pengepul';
+                          } else {
+                            _selectedRole = 'Nasabah';
+                          }
+
+                          if (regEmail != null && regEmail.isNotEmpty) {
+                            _emailController.text = regEmail;
+                            _passwordController.clear();
+                          }
+                        });
+                      }
                     },
                     child: const Text(
                       'Daftar Sekarang',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'pemilik_data.dart';
 import '../../../api_service.dart';
 import '../../../app_data.dart';
 
@@ -26,10 +27,12 @@ class _MitraTimbangViewState extends State<MitraTimbangView> {
     setState(() => _isSubmitting = true);
 
     final orderId = widget.orderData['id'] ?? '8902';
-    await ApiService.selesaiPenjemputan(
+
+    // 1. Kirim Laporan Timbangan ke Backend (Kurir melaporkan timbangan riil)
+    final hasil = await ApiService.laporTimbanganKurir(
       id: orderId,
       totalBerat: totalBerat,
-      totalSaldo: totalSaldo,
+      totalHarga: totalSaldo,
       items: [
         {'nama': 'Kardus & Karton Tebal', 'berat': beratKardus, 'subtotal': (beratKardus * hargaKardus).toInt()},
         {'nama': 'Botol Plastik PET Bersih', 'berat': beratBotol, 'subtotal': (beratBotol * hargaBotol).toInt()},
@@ -37,6 +40,15 @@ class _MitraTimbangViewState extends State<MitraTimbangView> {
     );
 
     if (!mounted) return;
+    if (hasil['success'] != true) {
+      setState(() => _isSubmitting = false);
+      final d = hasil['data'];
+      final pesan = (d is Map ? d['message'] : null) ?? hasil['message'] ?? 'Gagal mengirim laporan timbangan';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$pesan'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
     setState(() => _isSubmitting = false);
 
     _showSuccessDialog(totalBerat, totalSaldo);
@@ -59,18 +71,31 @@ class _MitraTimbangViewState extends State<MitraTimbangView> {
                 color: Color(0xFFE8F5E9),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle, color: primaryGreen, size: 54),
+              child: const Icon(Icons.scale, color: primaryGreen, size: 54),
             ),
             const SizedBox(height: 16),
             const Text(
-              'Penjemputan Selesai!',
+              'Timbangan Terkirim ke Mitra!',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
-              'Saldo sebesar Rp ${_formatCurrency(totalSaldo)} berhasil dikirimkan langsung ke dompet nasabah $namaNasabah.',
+              'Hasil timbangan seberat ${totalBerat.toStringAsFixed(1)} kg (Rp ${_formatCurrency(totalSaldo)}) berhasil dilaporkan ke Bank Sampah Mitra.',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'Catatan: Pembayaran dilakukan oleh Mitra ke dompet Nasabah (Kurir tidak memegang uang). Silakan angkut muatan ke bank sampah.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: primaryGreen, fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(height: 16),
             Container(
@@ -91,9 +116,9 @@ class _MitraTimbangViewState extends State<MitraTimbangView> {
                   ),
                   Container(width: 1, height: 28, color: Colors.grey.shade300),
                   Column(
-                    children: const [
-                      Text('Bonus Poin Hijau', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                      Text('+62 Poin', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: primaryGreen)),
+                    children: [
+                      const Text('Estimasi Nilai', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text('Rp ${_formatCurrency(totalSaldo)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: primaryGreen)),
                     ],
                   ),
                 ],
@@ -113,7 +138,7 @@ class _MitraTimbangViewState extends State<MitraTimbangView> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('Kembali ke Dashboard Kurir', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text('Bawa Muatan ke Gudang Bank Sampah', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -788,10 +813,10 @@ Terima kasih telah berkontribusi menjaga kelestarian bumi Ternate! 🌱
                     : const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check, size: 18, color: Colors.white),
+                          Icon(Icons.send, size: 18, color: Colors.white),
                           SizedBox(width: 8),
                           Text(
-                            'Selesaikan Penjemputan & Kirim Saldo',
+                            'Kirim Laporan Timbangan ke Mitra',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../auth/login_view.dart';
-import '../mitra/mitra_navigation_view.dart';
 import '../../../api_service.dart';
 import '../../../app_data.dart';
 
@@ -202,17 +201,6 @@ class _ProfileViewState extends State<ProfileView> {
     return _card(
       title: 'Pengaturan',
       children: [
-        _MenuTile(
-          icon: Icons.two_wheeler,
-          title: 'Mode Mitra Kurir (Armada Penjemputan)',
-          onTap: () {
-            AppData.role = 'kurir';
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const MitraNavigationView()),
-            );
-          },
-        ),
         _MenuTile(
           icon: Icons.edit_outlined,
           title: 'Edit Profil',

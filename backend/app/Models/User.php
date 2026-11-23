@@ -14,8 +14,8 @@ class User extends Authenticatable
     // Kolom yang boleh diisi massal
     protected $fillable = [
         'nama', 'username', 'email', 'password', 'role', 
-        'saldo', 'poin_hijau', 'login_attempts', 'locked_until', 
-        'no_hp', 'alamat', 'foto_profil'
+        'saldo', 'poin_hijau', 'total_sampah', 'login_attempts', 'locked_until', 
+        'no_hp', 'alamat', 'foto_profil', 'google_id', 'kendaraan', 'plat_nomor'
     ];
 
     // Kolom yang disembunyikan saat return JSON (keamanan)
@@ -28,6 +28,7 @@ class User extends Authenticatable
     protected $casts = [
         'password' => 'hashed',
         'saldo' => 'decimal:2',
+        'total_sampah' => 'decimal:2',
         'locked_until' => 'datetime',
     ];
 
@@ -40,6 +41,19 @@ class User extends Authenticatable
     }
     public function riwayats() {
         return $this->hasMany(Riwayat::class);
+    }
+
+    // --- VALIDASI MAKSIMAL 1 AKUN ADMIN ---
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if ($user->role === 'admin') {
+                $adminCount = static::where('role', 'admin')->count();
+                if ($adminCount >= 1) {
+                    throw new \Exception('Sistem REGREEN hanya memperbolehkan maksimal 1 akun Admin utama.');
+                }
+            }
+        });
     }
 
     // --- HELPER LOGIKA LOGIN (Sesuai Proposal) ---
